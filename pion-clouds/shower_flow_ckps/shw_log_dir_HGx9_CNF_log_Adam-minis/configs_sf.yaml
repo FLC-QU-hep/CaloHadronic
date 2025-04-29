@@ -1,0 +1,35 @@
+name: 'HGx9_CNF_log_Adam-minis'  
+comet_project: "CaloClouds3"  # please modify it in the bash script
+log_comet: false
+seed: 36
+device: 'cuda:0'
+ckps_dir: '/data/dust/user/mmozzani/pion-clouds/shower_flow_ckps/'
+load_dir: '/data/dust/user/mmozzani/pion-clouds/files/npy_array/'
+dataset_path : '/data/dust/user/mmozzani/pion-clouds/dataset/hdf5_HGx9/all_interactions_pions_regular_ECAL+HCAL_10-90GeV_{}.slcio.root_with_time.hdf5'
+
+# choose in which way you wanna give the model the difference between even and odd layers
+hot_encoding: 0 # choices: [0 (no enoding), 1, 2]    
+optimizer: 'Adam-mini' #[Adam, Adam-mini]
+fm:
+  num_inputs: 78
+  num_cond_inputs: 1
+  dim_time: 6
+  hidden_dims:
+    - 128
+    - 256
+    - 512
+    - 256
+    - 128
+
+model:  
+  CNF: true 
+  num_blocks:  2 #4
+  input_dim_multiplier: 2 #10
+  batch_size : 3000
+  perc_train: 0.9
+  perc_val: 0.1
+  epochs : 3000
+  shuffle : true
+  pin_memory: true
+  num_workers: 20
+  lr: 0.001

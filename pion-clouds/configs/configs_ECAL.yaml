@@ -1,0 +1,128 @@
+###########
+##############
+##############################################
+
+name: 'HGx9_Ecal_Smear_l3_d256_L32_CosAnn_AdamMini_Monotonic2_'  
+comet_project: "CaloClouds3-ECAL"   # please modify it in the bash script
+Acomment: 'PionClouds'
+log_comet: true
+multi_gpu: false
+
+only_hcal: false
+only_ecal: true
+
+model: # Model arguments
+  model_name: 'CaloClouds_3'  # choices: ['CaloClouds_1', 'CaloClouds_2']
+  sched_mode: 'quardatic'  # options: ['linear', 'quardatic', 'sigmoid'] # only for CC_1
+  kl_weight: 1e-3  # default: 0.001 = 1e-3
+  kld_min: 1.0  # default: 1.0 
+  residual: false  # choices: [true, false]  
+  
+transformer: # Transformer settings 
+  decoder_crossattn: false 
+  num_layers_dec_attn: 0
+  d_model: 128 
+  nhead: 8
+  num_layers: 3  
+  dim_feedforward: 512 
+  TSF_rff: 512
+  L: 32 
+  dropout_rate: 0.1
+  embed_kwargs:
+      activate_fourier_layer: true
+      include_input: true
+      max_freq: 16  # self.L / 2 
+      N_freqs: 32  # self.L 
+      log_sampling: true 
+      periodic_fns: [torch.sin, torch.cos]
+
+data:
+  farthest_point_sampling: false
+  optimal_transport: false
+  data.ecal_compressed = false
+  data: 'new_hgx4'  
+  # dataset_path: '/data/dust/user/mmozzani/pion-clouds/dataset/hdf5_2/all_interactions_pions_regular_ECAL+HCAL_10-90GeV_{}.slcio.root_with_time.hdf5'
+  dataset_path: '/data/dust/user/mmozzani/pion-clouds/dataset/hdf5_HGx9/all_interactions_pions_regular_ECAL+HCAL_10-90GeV_{}.slcio.root_with_time.hdf5'
+  dataset: 'getting_high' 
+  features: 4 # number of features in a point (x,y,z,energy,time) => 5
+  cond_features: 31 
+  ecal_features: 0 
+  norm_cond: true  # normalize conditioning to [-1,1] 
+  quantized_pos: false 
+  log_energy: true 
+  # to compute this, remember to multiply the energy *1000, then only when energy is bigger than 0 compute the log then mean and std
+  log_mean: -1.3037328 # for only ecal 
+  log_var: 1.1088891  # for only ecal  
+
+max_points: 3500
+#   max_points: 8000  # CaloClouds_2: 6_000 / CaloClouds_3: 52_000
+
+dataloader: # Dataloader
+  workers: 40
+  # when using multi gpu(4x gpus) the batch size per device is 8 
+  train_bs: 32  # this is per device! 
+  pin_memory: False  # choices=[True, False] 
+  shuffle: True  # choices=[True, False] 
+
+# Optimizer and scheduler
+optimizer: 'AdamMini'  # choices=['Adam', 'RAdam']
+max_iters: 3000000
+max_grad_norm: 2
+epochs: 100 #note! this are not real epochs, this is just how many time I repeat the dataset length (2M)!!!
+
+scheduler:
+  #from https://pytorch.org/blog/how-to-train-state-of-the-art-models-using-torchvision-latest-primitives/ 
+  lr_scheduler: 'cosineannealinglr' # choices=['cosineannealinglr', 'onecyclelr', 'linear'] 
+  # this parameters are for the cosineannealinglr and onecyclelr, if scheduler is linear lr=1e-4 
+  lr_warmup_epochs: 3 
+  lr_warmup_method: 'linear'
+  # this is the factor needed to go from 1.35e-5 to 13.5e-4 in 300k iterations
+  lr_warmup_factor: 1.0000076753130984 # = 13.5e-5/ 1.35e-5 **(1/3 e-5) only for cos annealing (lr_end/lr_start)^(1/num_iterations)
+  lr: 1.35e-5 # for linear 1e-4, 1.35e-5 # for cosine annealing 
+  max_lr: 13.5e-4 # for the onecyle  
+  end_lr: 6.75e-6 
+  weight_decay: 0
+  pct_start: 0.15 # for one cycle
+  # this 2 HP are for linear scheduler
+  sched_start_epoch: 300000 #cos annealing: 3e5, linear: 1e6 
+  sched_end_epoch: 3000000
+  
+# Others
+device: 'cuda'
+logdir: '/data/dust/user/mmozzani/pion-clouds/pion-clouds-log-dir/'
+seed: 455
+val_freq: 10000
+test_freq: 30000
+test_size: 400
+tag: null
+log_iter: 200
+
+# EMA scheduler
+ema_type: 'inverse'
+ema_power: 0.6667
+ema_max_value: 0.9999
+
+# EDM diffusion parameters for training
+model_sigma:
+    sigma_data: 0.5
+    sigma_sample_density:
+        type: 'lognormal'
+        mean: 0
+        std: 1
+dropout_mode: 'all'  # options: 'all', 'mid'
+dropout_rate: 0.1
+diffusion_loss: 'EDM-monotonic'  # l2 or l1 or EDM-monotonic
+diffusion_way: 'EDM' # ['EDM', 'cosine']
+
+# EDM diffusion parameters for sampling 
+num_steps: 18
+sampler: 'heun'
+sigma_min: 0.01
+sigma_max: 10.0
+rho: 7.0
+s_churn: 0.0
+s_noise: 1.0
+
+# NOTE: None in python is null in yaml !
+model_path: 'HGx9_Ecal_Smear_l3_d256_L32_CosAnn_AdamMini_Monotonic2_2025_04_08__20_07_01/ckpt_latest.pt'
+# model_path: null 
