@@ -11,12 +11,18 @@ pip install -r requirements.txt
 # Or using conda
 conda env create -f environment.yml
 ```
+
 ## Dataset 
-You can get the data from: 
+You can get the data of CaloHadronic from: 
 ```
 wget zenodo-link
 ```
 note: there is one file containing ~20k showers 
+
+You can get the raw root file with all Geant4 steps: 
+```
+wget zenodo-link
+```
 
 You can get the data needed to train the #PointsFM by running:
 ```
@@ -39,4 +45,11 @@ python pion-clouds/scripts/training.py --type hcal
 You can run the evaluation of CaloHadronic: 
 ```
 python pion-clouds/scripts/evaluation/eval_checkpoints.py
+```
+
+## Plots
+You can run the plotting scripts of CaloHadronic: 
+```
+python pion-clouds/scripts/evaluation/occ-scale.py
+python pion-clouds/scripts/evaluation/occ-scale_MultipleEnergies.py
 ```
