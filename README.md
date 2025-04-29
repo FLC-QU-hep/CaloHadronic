@@ -12,8 +12,15 @@ pip install -r requirements.txt
 conda env create -f environment.yml
 ```
 ## Dataset 
+You can get the data from: 
 ```
 wget zenodo-link
+```
+note: there is one file containing ~20k showers 
+
+You can get the data needed to train the #PointsFM by running:
+```
+python pion-clouds/scripts/SF_arrays.py
 ```
 
 ## Training
