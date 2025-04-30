@@ -1,5 +1,5 @@
-name: 'HGx9_CNF_OTloss'  
-comet_project: "CaloClouds3"  # please modify it in the bash script
+name: 'HGx9_PointsFM'  
+comet_project: "CaloHadronic"  # please modify it in the bash script
 log_comet: false
 seed: 36
 device: 'cuda:0'

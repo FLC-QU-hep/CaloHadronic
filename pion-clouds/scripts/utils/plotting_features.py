@@ -19,6 +19,7 @@ from scipy.stats import entropy
 from scipy.stats import wasserstein_distance
 import pandas as pd
 import json
+import sys
 
 mpl.rcParams['xtick.labelsize'] = 18    
 mpl.rcParams['ytick.labelsize'] = 18
@@ -896,15 +897,17 @@ def calc_wdist_1d(obs_real, obs_model, uw=None, vw=None, tot_shw=100, iterations
     np.random.shuffle(obs_real)
     np.random.shuffle(obs_model)
     wdists = [] 
-    
     for _ in range(iterations):
         # r = np.zeros_like(obs_real[j:j+batch_size])
         # weights_r = np.ones_like(obs_real[j:j+batch_size])
         if uw is not None:
             if len(uw[j:j+batch_size]) == 0:
                 continue  # or handle it some other way
-
-            wdist = wasserstein_distance(obs_real[j:j+batch_size], obs_model[j:j+batch_size], u_weights= uw[j:j+batch_size], v_weights = vw[j:j+batch_size])
+            wdist = wasserstein_distance(obs_real[j:j+batch_size], 
+                                         obs_model[j:j+batch_size], 
+                                         u_weights= uw[j:j+batch_size], 
+                                         v_weights = vw[j:j+batch_size],
+            )
             # wd_ur = wasserstein_distance(obs_real[j:j+batch_size], r)
             # wd_vr = wasserstein_distance(obs_model[j:j+batch_size], r)
         else:
@@ -926,9 +929,9 @@ def wd_table(real_dict, fake_dict, shw, threshold, my_dir, ecal=False, hcal=Fals
     if ecal: pp,l = '_ecal', 30
     elif hcal: pp,l = '_hcal', 48
     else: pp,l = '', 78
-    wd_mean_cog_x, wd_std_cog_x = calc_wdist_1d(real_dict["cog_x_r"+pp]-0.5, fake_dict["cog_x"+pp], tot_shw = shw)
-    wd_mean_cog_y, wd_std_cog_y = calc_wdist_1d(real_dict["cog_y_r"+pp], fake_dict["cog_y"+pp], tot_shw = shw)
-    wd_mean_cog_z, wd_std_cog_z = calc_wdist_1d(real_dict["cog_z_r"+pp]-0.5, fake_dict["cog_z"+pp], tot_shw = shw)
+    wd_mean_cog_x, wd_std_cog_x = calc_wdist_1d(real_dict["cog_x_r"+pp][1:]-0.5, fake_dict["cog_x"+pp], tot_shw = shw)
+    wd_mean_cog_y, wd_std_cog_y = calc_wdist_1d(real_dict["cog_y_r"+pp][1:], fake_dict["cog_y"+pp], tot_shw = shw)
+    wd_mean_cog_z, wd_std_cog_z = calc_wdist_1d(real_dict["cog_z_r"+pp][1:]-0.5, fake_dict["cog_z"+pp], tot_shw = shw)
     dict_cog_x, dict_cog_y, dict_cog_z = '%.2f $\pm$ %.2f'%(wd_mean_cog_x, wd_std_cog_x), '%.2f $\pm$ %.2f'%(wd_mean_cog_y, wd_std_cog_y), '%.2f $\pm$ %.2f'%(wd_mean_cog_z, wd_std_cog_z)
     my_dict['COG x'].append(dict_cog_x)
     my_dict['COG y'].append(dict_cog_y)
@@ -946,8 +949,18 @@ def wd_table(real_dict, fake_dict, shw, threshold, my_dir, ecal=False, hcal=Fals
     dict_esum = '%.2f $\pm$ %.2f'%(wd_mean_esum, wd_std_esum)
     my_dict['Energy Sum'].append(dict_esum)
     
-    radial = np.linspace(0, 30, len(real_dict["e_radial"+pp+"_r"][0]))
-    wd_mean_rad, wd_std_rad = calc_wdist_1d(radial, radial, uw=real_dict["e_radial"+pp+"_r"][0], vw=fake_dict["e_radial"+pp][0], tot_shw = len(real_dict["e_radial"+pp+"_r"][0]))
+    diff = int(len(fake_dict["e_radial"+pp][0]) - len(real_dict["e_radial"+pp+"_r"][0]))
+    if diff>0:
+        totshw =  len(fake_dict["e_radial"+pp][0]) 
+        f = fake_dict["e_radial"+pp][0] 
+        radial = np.linspace(0, 30, len(fake_dict["e_radial"+pp][0]))
+        r = np.concatenate([real_dict["e_radial"+pp+"_r"][0], np.zeros((abs(diff)))]) 
+    else: 
+        totshw = len(real_dict["e_radial"+pp+"_r"][0]) 
+        r = real_dict["e_radial"+pp+"_r"][0] 
+        radial = np.linspace(0, 30, len(real_dict["e_radial"+pp+"_r"][0]))
+        f = np.concatenate([fake_dict["e_radial"+pp][0], np.zeros((abs(diff)))])
+    wd_mean_rad, wd_std_rad = calc_wdist_1d(radial, radial, uw=r, vw=f, tot_shw = totshw)
     dict_rad = '%.2f $\pm$ %.2f'%(wd_mean_rad, wd_std_rad)
     my_dict['Radial Energy'].append(dict_rad)
     
@@ -991,18 +1004,18 @@ def wd_table(real_dict, fake_dict, shw, threshold, my_dir, ecal=False, hcal=Fals
     wd_dictionary['Shower Start Layer std']= wd_std_sl / np.std(real_dict["start_layer_list_r"+pp])
     wd_dictionary['Energy Sum mean']= wd_mean_esum / np.std(real_dict["e_sum"+pp+"_list_r"])
     wd_dictionary['Energy Sum std']= wd_std_esum / np.std(real_dict["e_sum"+pp+"_list_r"])
-    wd_dictionary['COG x mean'] = wd_mean_cog_x/ np.std(real_dict["cog_x_r"+pp])
-    wd_dictionary['COG x std'] = wd_std_cog_x / np.std(real_dict["cog_x_r"+pp])
-    wd_dictionary['COG y mean'] = wd_mean_cog_y / np.std(real_dict["cog_y_r"+pp])
-    wd_dictionary['COG y std'] = wd_std_cog_y / np.std(real_dict["cog_y_r"+pp])
+    wd_dictionary['COG x mean'] = wd_mean_cog_x / np.std(real_dict["cog_x_r"+pp][1:])
+    wd_dictionary['COG x std'] = wd_std_cog_x / np.std(real_dict["cog_x_r"+pp][1:])
+    wd_dictionary['COG y mean'] = wd_mean_cog_y / np.std(real_dict["cog_y_r"+pp][1:])
+    wd_dictionary['COG y std'] = wd_std_cog_y / np.std(real_dict["cog_y_r"+pp][1:])
+    wd_dictionary['COG z mean'] = wd_mean_cog_z / np.std(real_dict["cog_z_r"+pp][1:])
+    wd_dictionary['COG z std'] = wd_std_cog_z / np.std(real_dict["cog_z_r"+pp][1:])
     wd_dictionary['Visible Cell Energy mean'] = wd_mean_hits / np.std(real_dict["hits"+pp+"_list_r"])
     wd_dictionary['Visible Cell Energy std'] = wd_std_hits / np.std(real_dict["hits"+pp+"_list_r"])
     wd_dictionary['Energy along y mean'] = wd_mean_long / np.std(real_dict["e_layers"+pp+"_list_r"])
     wd_dictionary['Energy along y std'] = wd_std_long / np.std(real_dict["e_layers"+pp+"_list_r"])
     wd_dictionary['# Hits mean'] = wd_mean_hits / np.std(real_dict["hits"+pp+"_list_r"])
     wd_dictionary['# Hits std'] = wd_std_hits / np.std(real_dict["hits"+pp+"_list_r"])
-    wd_dictionary['COG z mean'] = wd_mean_cog_z / np.std(real_dict["cog_z_r"+pp])
-    wd_dictionary['COG z std'] = wd_std_cog_z / np.std(real_dict["cog_z_r"+pp])
     wd_dictionary['Radial Energy mean'] = wd_mean_rad / np.std(real_dict["e_radial"+pp+"_r"][0])
     wd_dictionary['Radial Energy std'] = wd_std_rad / np.std(real_dict["e_radial"+pp+"_r"][0])
     
@@ -1018,15 +1031,17 @@ def kld(a, b ,num_quantiles=25, tot_shw=100, iterations = 5):
     
     np.random.shuffle(a)
     np.random.shuffle(b)
+   
     for _ in range(iterations):
         if len(a[j:j+batch_size]) == 0:
             continue  # or handle it some other way
-        quantiles = np.quantile(a[j:j+batch_size], np.linspace(0.,1.,num_quantiles+1))
+        quantiles = np.quantile(a[j:j+batch_size], np.linspace(0.,1.,num_quantiles+1)) 
         quantiles[0] = float('-inf')
         quantiles[-1] = float('inf')
         pk = np.histogram(a[j:j+batch_size], quantiles)[0]/len(a)
         qk = np.histogram(b[j:j+batch_size], quantiles)[0]/len(b)
-        kl.append(entropy(pk, qk))
+        e = entropy(pk, qk)
+        kl.append(e[np.isfinite(e)])    
         j += batch_size
     return np.mean(kl), np.std(kl)
 
@@ -1038,9 +1053,10 @@ def kl_table(real_dict, fake_dict, shw, threshold, my_dir, ecal=False, hcal=Fals
     if ecal: pp,l = '_ecal', 30
     elif hcal: pp,l = '_hcal', 48
     else: pp,l = '', 78
-    kl_mean_cog_x, kl_std_cog_x = kld(real_dict["cog_x_r"+pp]-0.5, fake_dict["cog_x"+pp],num_quantiles=25, tot_shw = shw)
-    kl_mean_cog_y, kl_std_cog_y = kld(real_dict["cog_y_r"+pp], fake_dict["cog_y"+pp],num_quantiles=25, tot_shw = shw)
-    kl_mean_cog_z, kl_std_cog_z = kld(real_dict["cog_z_r"+pp]-0.5, fake_dict["cog_z"+pp],num_quantiles=25, tot_shw = shw)
+
+    kl_mean_cog_x, kl_std_cog_x = kld(real_dict["cog_x_r"+pp][1:]-0.5, fake_dict["cog_x"+pp], num_quantiles=25, tot_shw = shw)
+    kl_mean_cog_y, kl_std_cog_y = kld(real_dict["cog_y_r"+pp][1:], fake_dict["cog_y"+pp], num_quantiles=25, tot_shw = shw)
+    kl_mean_cog_z, kl_std_cog_z = kld(real_dict["cog_z_r"+pp][1:]-0.5, fake_dict["cog_z"+pp], num_quantiles=25, tot_shw = shw)
     dict_cog_x, dict_cog_y, dict_cog_z = '%.3f $\pm$ %.3f'%(kl_mean_cog_x, kl_std_cog_x), '%.3f $\pm$ %.3f'%(kl_mean_cog_y, kl_std_cog_y), '%.3f $\pm$ %.3f'%(kl_mean_cog_z, kl_std_cog_z)
     my_dict['COG x'].append(dict_cog_x)
     my_dict['COG y'].append(dict_cog_y)
@@ -1058,15 +1074,14 @@ def kl_table(real_dict, fake_dict, shw, threshold, my_dir, ecal=False, hcal=Fals
     dict_esum = '%.3f $\pm$ %.3f'%(kl_mean_esum, kl_std_esum)
     my_dict['Energy Sum'].append(dict_esum)
     
-    kl_mean_rad, kl_std_rad = kld(real_dict["e_radial"+pp+"_r"][0], fake_dict["e_radial"+pp][0], num_quantiles=25, tot_shw = len(real_dict["e_radial"+pp+"_r"]))
-
+    kl_mean_rad, kl_std_rad = kld(real_dict["e_radial"+pp+"_r"][0], fake_dict["e_radial"+pp][0], num_quantiles=25, tot_shw = len(real_dict["e_radial"+pp+"_r"][0]))
     dict_rad = '%.3f $\pm$ %.3f'%(kl_mean_rad, kl_std_rad)
     my_dict['Radial Energy'].append(dict_rad)
     
     kl_mean_hits, kl_std_hits = kld(real_dict["hits"+pp+"_list_r"], fake_dict["hits"+pp+"_list"], num_quantiles=25, tot_shw = shw) 
     dict_hits = '%.3f $\pm$ %.3f'%(kl_mean_hits, kl_std_hits)
     my_dict['N. Hits'].append(dict_hits)
-    
+    print(len(real_dict["e_layers"+pp+"_list_r"]))
     kl_mean_long, kl_std_long = kld(real_dict["e_layers"+pp+"_list_r"], fake_dict["e_layers"+pp+"_list"], num_quantiles=25, tot_shw = len(real_dict["e_layers"+pp+"_list_r"])) 
     dict_long = '%.3f $\pm$ %.3f'%(kl_mean_long, kl_std_long)
     my_dict['Energy along y'].append(dict_long)
@@ -1099,24 +1114,24 @@ def kl_table(real_dict, fake_dict, shw, threshold, my_dir, ecal=False, hcal=Fals
     # log_path.unlink() # remove this file: there are memory information and so on
     
     # kl
-    kl_dictionary['Shower Start Layer mean'] = kl_mean_sl / np.std(real_dict["start_layer_list_r"+pp])
-    kl_dictionary['Shower Start Layer std'] = kl_std_sl / np.std(real_dict["start_layer_list_r"+pp])
-    kl_dictionary['Energy Sum mean'] = kl_mean_esum / np.std(real_dict["e_sum"+pp+"_list_r"])
-    kl_dictionary['Energy Sum std'] = kl_std_esum / np.std(real_dict["e_sum"+pp+"_list_r"])
-    kl_dictionary['COG x mean'] = kl_mean_cog_x/ np.std(real_dict["cog_x_r"+pp])
-    kl_dictionary['COG x std'] = kl_std_cog_x / np.std(real_dict["cog_x_r"+pp])
-    kl_dictionary['COG y mean'] = kl_mean_cog_y / np.std(real_dict["cog_y_r"+pp])
-    kl_dictionary['COG y std'] = kl_std_cog_y / np.std(real_dict["cog_y_r"+pp])
-    kl_dictionary['Visible Cell Energy mean'] = kl_mean_hits / np.std(real_dict["hits"+pp+"_list_r"])
-    kl_dictionary['Visible Cell Energy std'] = kl_std_hits / np.std(real_dict["hits"+pp+"_list_r"])
-    kl_dictionary['Energy along y mean'] = kl_mean_long / np.std(real_dict["e_layers"+pp+"_list_r"])
-    kl_dictionary['Energy along y std'] = kl_std_long / np.std(real_dict["e_layers"+pp+"_list_r"])
-    kl_dictionary['# Hits mean'] = kl_mean_hits / np.std(real_dict["hits"+pp+"_list_r"])
-    kl_dictionary['# Hits std'] = kl_std_hits / np.std(real_dict["hits"+pp+"_list_r"])
-    kl_dictionary['COG z mean'] = kl_mean_cog_z / np.std(real_dict["cog_z_r"+pp])
-    kl_dictionary['COG z std'] = kl_std_cog_z / np.std(real_dict["cog_z_r"+pp])
-    kl_dictionary['Radial Energy mean'] = kl_mean_rad / np.std(real_dict["e_radial"+pp+"_r"][0])
-    kl_dictionary['Radial Energy std'] = kl_std_rad / np.std(real_dict["e_radial"+pp+"_r"][0])
+    kl_dictionary['Shower Start Layer mean'] = kl_mean_sl 
+    kl_dictionary['Shower Start Layer std'] = kl_std_sl 
+    kl_dictionary['Energy Sum mean'] = kl_mean_esum 
+    kl_dictionary['Energy Sum std'] = kl_std_esum 
+    kl_dictionary['COG x mean'] = kl_mean_cog_x
+    kl_dictionary['COG x std'] = kl_std_cog_x 
+    kl_dictionary['COG y mean'] = kl_mean_cog_y 
+    kl_dictionary['COG y std'] = kl_std_cog_y 
+    kl_dictionary['COG z mean'] = kl_mean_cog_z 
+    kl_dictionary['COG z std'] = kl_std_cog_z 
+    kl_dictionary['Visible Cell Energy mean'] = kl_mean_hits 
+    kl_dictionary['Visible Cell Energy std'] = kl_std_hits 
+    kl_dictionary['Energy along y mean'] = kl_mean_long 
+    kl_dictionary['Energy along y std'] = kl_std_long 
+    kl_dictionary['# Hits mean'] = kl_mean_hits 
+    kl_dictionary['# Hits std'] = kl_std_hits 
+    kl_dictionary['Radial Energy mean'] = kl_mean_rad 
+    kl_dictionary['Radial Energy std'] = kl_std_rad 
     
     with open(my_dir+'kl.txt', 'w') as file:
         file.write(json.dumps(kl_dictionary))

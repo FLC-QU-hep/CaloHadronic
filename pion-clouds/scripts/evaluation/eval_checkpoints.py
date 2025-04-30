@@ -27,9 +27,6 @@ print('for reco on pions: ', for_reco_on_pions)
 caloclouds = 'edm'   # 'ddpm, 'edm', 'cm'
 my_dir = '../pion-clouds-log-dir/' 
 edm_dir_ecal = my_dir+'HGx9_Ecal_Smear_l3_d256_L32_CosAnn_AdamMini_Monotonic2_2025_04_08__20_07_01/'
-# edm_dir = my_dir+'HGx9_Hcal_smear_l4_ldec2_L32_h16_CosAnn_AdamMini_Monotonic_2025_04_08__19_50_20/'
-
-# with ecal compression
 edm_dir = my_dir+'HGx9_Hcal_ecalCompression_2025_04_11__11_30_52/'
 
 cfg_flow = OmegaConf.load('configs/configs_sf.yaml')
@@ -39,10 +36,6 @@ configs = cfg_hcal
 configs.num_input_flow = cfg_flow.fm.num_inputs
 cfg_ecal.data.ecal_compressed = False
 cfg_hcal.device = cfg_ecal.device = 'cuda'  # 'cuda' or 'cpu'  
-print('Shower Flow: ', _with_sf)
-
-if _with_sf: single_SF = True 
-else: single_SF = False
 
 for cfg in [cfg_hcal, cfg_ecal]:
     cfg.num_steps  = 30
@@ -55,7 +48,6 @@ print(gen_folder)
 print('num', num, 'bs', bs)     
 print('steps: ', cfg_hcal.num_steps)
 print('incident energy range: ', energy_range)
-kdiffusion=True   # EDM 
 
 def main(cfg_ecal, cfg_hcal):
     flow = distribution = fm.CNF(fm.FullyConnected(**cfg_flow.fm))
@@ -95,9 +87,11 @@ else:
     raise ValueError('cond_E Normalization not consistent between ECAL and HCAL models')
 
  
-fake_showers_ecal, samples, cond_E, real_showers, cond_E_real = gen_utils.gen_showers_batch(model_ecal, distribution_ecal, energy_range[0], energy_range[1], num=num, 
-                                                max_points=3200, bs=bs, kdiffusion=kdiffusion, config=cfg_ecal, 
-                                                enable_shower_flow = _with_sf, cond_E=cond_E, single_SF=1, gen_both_EandHcal=generate_both_ecal_and_hcal)
+fake_showers_ecal, samples, cond_E, real_showers, cond_E_real = gen_utils.gen_showers_batch(model_ecal, distribution_ecal, 
+                                                                energy_range[0], energy_range[1], num=num, max_points=3200, 
+                                                                bs=bs, kdiffusion=kdiffusion, config=cfg_ecal, 
+                                                                enable_shower_flow = _with_sf, cond_E=cond_E, 
+                                                                single_SF=1, gen_both_EandHcal=generate_both_ecal_and_hcal)
 
 if cfg_hcal.device == 'cuda': torch.cuda.empty_cache()
 print('generating HCAL part...')
@@ -116,10 +110,8 @@ elif (e_max<24) & (e_min>15): inc_en = '20GeV_'
 elif (e_max<54) & (e_min>45): inc_en = '50GeV_'
 elif (e_max<89) & (e_min>80): inc_en = '85GeV_'
 else: inc_en = '' #default
-if _with_sf==False: inc_en = inc_en + 'noSF_'
-         
-os.makedirs("../files/generated_showers/"+gen_folder, exist_ok=True)
 
+os.makedirs("../files/generated_showers/"+gen_folder, exist_ok=True)
 float_type = "f8"
 
 if for_reco_on_pions: # this was added when Anatolii asked me the showers for running reco

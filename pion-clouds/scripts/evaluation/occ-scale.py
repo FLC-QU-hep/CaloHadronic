@@ -46,7 +46,7 @@ load_array_and_plot = params.load_array_and_plot
 
 for b in [load_dataset_and_project, compute_features, load_array_and_plot]:
     if (b!=0) & (b!=1):
-        raise ValueError(f"{b} mus be boolean! ")
+        raise ValueError(f"{b} must be boolean! ")
 
 both_to_save = True
 fake_SHOWERS_TO_SAVE, real_SHOWERS_TO_SAVE =  True, True

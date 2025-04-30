@@ -2,17 +2,17 @@
 ##############
 ##############################################
 name: 'HGx9_Hcal_ecalCompression_'  
-comet_project: "CaloClouds3-HCAL"  # please modify it in the bash script
+comet_project: "CaloHadronic-HCAL"  # please modify it in the bash script
 Acomment: 'PionClouds'
 log_comet: true
 multi_gpu: true
-
+logdir: '/data/dust/user/mmozzani/pion-clouds/pion-clouds-log-dir/'
 only_hcal: true
 only_ecal: false
 
 model: # Model arguments
-  model_name: 'CaloClouds_3'  # choices: ['CaloClouds_1', 'CaloClouds_2']
-  sched_mode: 'quardatic'  # options: ['linear', 'quardatic', 'sigmoid']  # only for CC_1 
+  model_name: 'CaloHadronic'  
+  sched_mode: 'quardatic'  
   kl_weight: 1e-3  # default: 0.001 = 1e-3
   kld_min: 1.0  # default: 1.0 
   residual: false  # choices: [true, false]
@@ -41,7 +41,6 @@ data:
   ecal_compressed: true
   data: 'new_hgx4'  
   dataset_path: '/data/dust/user/mmozzani/pion-clouds/dataset/hdf5_HGx9/all_interactions_pions_regular_ECAL+HCAL_10-90GeV_{}.slcio.root_with_time.hdf5'
-  dataset: 'getting_high' 
   features: 4  # number of features in a point (x,y,z,energy,time) => 5
   cond_features: 49  # (energy =1 + points_per_layer = 48 ) ## (n_points = 1) 50
   ecal_features: 4  
@@ -87,7 +86,6 @@ scheduler:
 
 # Others
 device: 'cuda'
-logdir: '/data/dust/user/mmozzani/pion-clouds/pion-clouds-log-dir/'
 seed: 45
 val_freq: 10000
 test_freq: 30000
@@ -109,7 +107,7 @@ model_sigma:
         std: 1
 
 diffusion_loss: 'EDM-monotonic'  # l2 or l1 or EDM-monotonic
-diffusion_way: 'EDM' # ['EDM', 'cosine']
+diffusion_way: 'EDM' 
 
 # EDM diffusion parameters for sampling
 num_steps: 18
@@ -122,6 +120,5 @@ s_noise: 1.0
 
 # NOTE: None in python is null in yaml !
 
-# model_path: 'HGx9_Hcal_smear_l4_ldec2_L32_h16_CosAnn_AdamMini_Monotonic_2025_04_08__19_50_20/ckpt_latest.pt'
 model_path: 'HGx9_Hcal_ecalCompression_2025_04_11__11_30_52/ckpt_latest.pt'
 # model_path: null 
