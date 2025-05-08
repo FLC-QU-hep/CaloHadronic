@@ -1,0 +1,124 @@
+###########
+##############
+##############################################
+name: 'HGx9_Hcal_ecalCompression_'  
+comet_project: "CaloHadronic-HCAL"  # please modify it in the bash script
+Acomment: 'PionClouds'
+log_comet: true
+multi_gpu: true
+logdir: '/data/dust/user/mmozzani/pion-clouds/pion-clouds-log-dir/'
+only_hcal: true
+only_ecal: false
+
+model: # Model arguments
+  model_name: 'CaloHadronic'  
+  sched_mode: 'quardatic'  
+  kl_weight: 1e-3  # default: 0.001 = 1e-3
+  kld_min: 1.0  # default: 1.0 
+  residual: false  # choices: [true, false]
+
+transformer: # Transformer settings
+  decoder_crossattn: true
+  num_layers_dec_attn: 2
+  d_model: 128  # 128, 256
+  nhead: 16
+  num_layers: 4
+  dim_feedforward: 512  # 512, 1024
+  TSF_rff: 512
+  L: 32
+  dropout_rate: 0.1
+  embed_kwargs:
+      activate_fourier_layer: true
+      include_input: true
+      max_freq: 16  # self.L / 2
+      N_freqs: 32  # self.L
+      log_sampling: true
+      periodic_fns: [torch.sin, torch.cos]
+
+data:
+  farthest_point_sampling: false
+  optimal_transport: false
+  ecal_compressed: true
+  data: 'new_hgx4'  
+  dataset_path: '/data/dust/user/mmozzani/pion-clouds/dataset/hdf5_HGx9/all_interactions_pions_regular_ECAL+HCAL_10-90GeV_{}.slcio.root_with_time.hdf5'
+  features: 4  # number of features in a point (x,y,z,energy,time) => 5
+  cond_features: 49  # (energy =1 + points_per_layer = 48 ) ## (n_points = 1) 50
+  ecal_features: 4  
+  norm_cond: true  # normalize conditioning to [-1,1]
+  quantized_pos: false
+  log_energy: true
+  # to compute this, remember to multiply the energy *1000, then only when energy is bigger than 0 compute the log then mean and std
+  log_mean: -1.8573549 # for only hcal
+  log_var: 1.7792583  # for only hcal 
+
+max_points: 3500
+#   max_points: 8000  # CaloClouds_2: 6_000 / CaloClouds_3: 52_000
+
+dataloader: # Dataloader
+  workers: 40
+  train_bs: 32  # this is per device
+  pin_memory: False  # choices=[True, False]
+  shuffle: True  # choices=[True, False]
+
+# Optimizer and scheduler
+# Optimizer and scheduler
+optimizer: 'AdamMini' # choices=['Adam', 'RAdam', 'AdamMini']
+max_iters: 5000000
+max_grad_norm: 2
+epochs: 100
+
+scheduler:
+  #from https://pytorch.org/blog/how-to-train-state-of-the-art-models-using-torchvision-latest-primitives/
+  lr_scheduler: 'cosineannealinglr' # choices=['cosineannealinglr', 'onecyclelr', 'linear'] 
+  # this parameters are for the cosineannealinglr and onecyclelr, if scheduler is linear lr=1e-4 
+  lr_warmup_epochs: 3 
+  lr_warmup_method: 'linear'
+  # this is the factor needed to go from 3e-5 to 3e-4 in 500k iterations 
+  lr_warmup_factor: 1.0000046051807898 # = 3e-4/3e-5 **(1/5 e-5) only for cos annealing
+  lr: 3e-5 # for cosine annealing is the start lr (3e-5), for linear is 1e-4
+  max_lr: 3e-4 # for the onecyle  
+  end_lr: 1e-6 
+  weight_decay: 0
+  pct_start: 0.3 # for one cycle
+  # this 2 HP are for linear scheduler 
+  sched_start_epoch: 5e5 #for cos annealing, otherwise 1e6
+  sched_end_epoch: 3000000
+
+# Others
+device: 'cuda'
+seed: 45
+val_freq: 10000
+test_freq: 30000
+test_size: 400
+tag: null
+log_iter: 200
+
+# EMA scheduler
+ema_type: 'inverse'
+ema_power: 0.6667
+ema_max_value: 0.9999
+
+# EDM diffusion parameters for training
+model_sigma:
+    sigma_data: 0.5
+    sigma_sample_density:
+        type: 'lognormal'
+        mean: 0
+        std: 1
+
+diffusion_loss: 'EDM-monotonic'  # l2 or l1 or EDM-monotonic
+diffusion_way: 'EDM' 
+
+# EDM diffusion parameters for sampling
+num_steps: 18
+sampler: 'heun'
+sigma_min: 0.01
+sigma_max: 10.0
+rho: 7.0
+s_churn: 0.0
+s_noise: 1.0
+
+# NOTE: None in python is null in yaml !
+
+model_path: 'HGx9_Hcal_ecalCompression_2025_04_11__11_30_52/ckpt_latest.pt'
+# model_path: null 
