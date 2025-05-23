@@ -2,7 +2,7 @@
 
 <div style="text-align: center;">
 Thorsten Buss, Frank Gaede, Gregor Kasieczka, Anatolii Korol, Katja Kruger, Peter McKeown and Martina Mozzanica 
-
+contact: martina.mozzanica@uni-hamburg.de
 [![arXiv](https://img.shields.io/badge/arXiv-2501.05534-red)](https://arxiv.org/abs/2501.05534)
 [![PyTorch](https://img.shields.io/badge/PyTorch-2.2-orange)](https://pytorch.org)
 
@@ -86,3 +86,7 @@ You can run the plotting scripts of CaloHadronic:
 python pion-clouds/scripts/evaluation/occ-scale.py --load_dataset_and_project 1 --compute_features 1 --load_array_and_plot 1
 python pion-clouds/scripts/evaluation/occ-scale_MultipleEnergies.py
 ```
+
+## Contact
+
+Martina Mozzanica - [@linkedin](https://www.linkedin.com/in/martina-mozzanica-20017b202/) - martina.mozzanica@uni-hamburg.de
