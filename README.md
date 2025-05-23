@@ -15,8 +15,8 @@ This repository contains the code for the results presented in the paper [`CaloH
 **Abstract:**
 
 ```
-Simulating showers of particles in highly-granular calorimeters is a key frontier
-in the application of machine learning to particle physics.cAchieving high accuracy
+Simulating showers of particles in highly-granular calorimeters is a key frontier in the application of
+machine learning to particle physics. Achieving high accuracy
 and speed with generative machine learning models can enable them to augment traditional
 simulations and alleviate a major computing constraint. 
 Recent developments have shown how diffusion based generative shower simulation
