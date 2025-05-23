@@ -10,8 +10,8 @@ Thorsten Buss, Frank Gaede, Gregor Kasieczka, Anatolii Korol, Katja Kruger, Pete
 
 This repository contains the code for the results presented in the paper [`CaloHadronic: a diffusion model for the generation of hadronic pion showers`](link)
 
-![Alt text](model.pdf)
-<img src=model.pdf width=900 style="border-radius:10px">
+![Alt text](model-1.png)
+<img src=model-1.png width=900 style="border-radius:10px">
 
 **Abstract:**
 
