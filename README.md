@@ -1,4 +1,40 @@
 # CaloHadronic
+# OmniJet-α Calo: Applying OJA to calorimeter data
+
+<div style="text-align: center;">
+Joschka Birk, Frank Gaede, Anna Hallin, Gregor Kasieczka, Martina Mozzanica, Henning Rose
+
+[![arXiv](https://img.shields.io/badge/arXiv-2501.05534-red)](https://arxiv.org/abs/2501.05534)
+[![PyTorch](https://img.shields.io/badge/PyTorch-2.2-orange)](https://pytorch.org)
+
+</div>
+
+This repository contains the code for the results presented in the paper [`OmniJet-α_C: Learning point cloud calorimeter simulations using generative transformers`](https://arxiv.org/abs/2501.05534)
+The documentation of the original OmniJet-α can be found at [uhh-pd-ml/omnijet_alpha](https://github.com/uhh-pd-ml/omnijet_alpha)
+
+<img src=model.pdf width=900 style="border-radius:10px">
+
+**Abstract:**
+
+```
+We show the first use of generative transformers for generating calorimeter showers as point clouds
+in a high-granularity calorimeter. Using the tokenizer and generative part of the OmniJet-α model,
+we represent the hits in the detector as sequences of integers. This model allows variable-length
+sequences, which means that it supports realistic shower development and does not need to be
+conditioned on the number of hits. Since the tokenization represents the showers as point clouds,
+the model learns the geometry of the showers without being restricted to any particular voxel grid.
+```
+
+## Table of Contents
+
+- [How to run the code](#how-to-run-the-code)
+- [Dataset](#dataset)
+- [Installation](#installation)
+- [Tokenization](#tokenization)
+- [Generative training](#generative-training)
+- [Transfer learning / Classifier training](#transfer-learning--classifier-training)
+- [Citation](#citation)
+
 
 ## Setup
 
