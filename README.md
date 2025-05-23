@@ -15,23 +15,21 @@ This repository contains the code for the results presented in the paper [`CaloH
 **Abstract:**
 
 ```
-We show the first use of generative transformers for generating calorimeter showers as point clouds
-in a high-granularity calorimeter. Using the tokenizer and generative part of the OmniJet-α model,
-we represent the hits in the detector as sequences of integers. This model allows variable-length
-sequences, which means that it supports realistic shower development and does not need to be
-conditioned on the number of hits. Since the tokenization represents the showers as point clouds,
-the model learns the geometry of the showers without being restricted to any particular voxel grid.
+Simulating showers of particles in highly-granular calorimeters is a key frontier in the application of machine learning to particle physics.
+Achieving high accuracy and speed with generative machine learning models can enable them to augment traditional simulations and alleviate a major computing constraint. \\
+Recent developments have shown how diffusion based generative shower simulation approaches that do not rely on a fixed structure, but instead generate geometry-independent point clouds, are very efficient.
+We present a transformer-based extension to previous architectures which were developed for simulating electromagnetic showers in the highly granular electromagnetic calorimeter of ILD. 
+The attention mechanism now allows us to generate complex hadronic showers with more pronounced substructure across both the electromagnetic and hadronic calorimeters.
+This is the first time that ML methods are used to holistically generate showers across ECal and HCal in highly granular imaging calorimeters.
 ```
 
 ## Table of Contents
 
-- [How to run the code](#how-to-run-the-code)
+- [Setup](#setup)
 - [Dataset](#dataset)
-- [Installation](#installation)
-- [Tokenization](#tokenization)
-- [Generative training](#generative-training)
-- [Transfer learning / Classifier training](#transfer-learning--classifier-training)
-- [Citation](#citation)
+- [Training](#training)
+- [Evaluation](#evaluation)
+- [Plots](#plots)
 
 
 ## Setup
