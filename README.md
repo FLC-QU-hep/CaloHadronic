@@ -11,7 +11,6 @@ contact: martina.mozzanica@uni-hamburg.de
 This repository contains the code for the results presented in the paper [`CaloHadronic: a diffusion model for the generation of hadronic pion showers`](link)
 
 <img src=model-1.png width=900 style="border-radius:10px">
-<img src=model-1-modified.png width=900 style="border-radius:10px">
 
 **Abstract:**
 
