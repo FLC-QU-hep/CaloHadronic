@@ -100,7 +100,7 @@ Martina Mozzanica - [@linkedin](https://www.linkedin.com/in/martina-mozzanica-20
 <!-- LICENSE -->
 ## License
 
-Distributed under the Unlicense License. See `LICENSE.txt` for more information.
+Distributed under the Unlicense License. See `LICENSE` for more information.
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
