@@ -1,17 +1,14 @@
-# CaloHadronic
-# OmniJet-α Calo: Applying OJA to calorimeter data
+# CaloHadronic: a diffusion model for the generation of hadronic pion showers
 
 <div style="text-align: center;">
-Joschka Birk, Frank Gaede, Anna Hallin, Gregor Kasieczka, Martina Mozzanica, Henning Rose
+Thorsten Buss, Frank Gaede, Gregor Kasieczka, Anatolii Korol, Katja Kruger, Peter McKeown and Martina Mozzanica 
 
 [![arXiv](https://img.shields.io/badge/arXiv-2501.05534-red)](https://arxiv.org/abs/2501.05534)
 [![PyTorch](https://img.shields.io/badge/PyTorch-2.2-orange)](https://pytorch.org)
 
 </div>
 
-This repository contains the code for the results presented in the paper [`OmniJet-α_C: Learning point cloud calorimeter simulations using generative transformers`](https://arxiv.org/abs/2501.05534)
-The documentation of the original OmniJet-α can be found at [uhh-pd-ml/omnijet_alpha](https://github.com/uhh-pd-ml/omnijet_alpha)
-
+This repository contains the code for the results presented in the paper [`CaloHadronic: a diffusion model for the generation of hadronic pion showers`](link)
 <img src=model.pdf width=900 style="border-radius:10px">
 
 **Abstract:**
