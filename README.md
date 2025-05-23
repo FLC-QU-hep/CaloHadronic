@@ -24,7 +24,7 @@ You can get the raw root file with all Geant4 steps:
 wget zenodo-link
 ```
 
-You can get the data needed to train the #PointsFM by running:
+You can get the data needed to train the PointCountFM by running:
 ```
 python pion-clouds/scripts/SF_arrays.py
 ```
