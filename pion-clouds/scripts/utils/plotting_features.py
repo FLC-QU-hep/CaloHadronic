@@ -53,10 +53,12 @@ class Configs():
         self.lw = 5
 
     # radial profile
-        self.bins_r = np.linspace(0, 25, 26) #np.logspace(np.log10(0.1), np.log10(40), 60)
+        self.bins_r = np.linspace(0, 30, 31) #np.logspace(np.log10(0.1), np.log10(40), 60)
+        self.bins_r_mm = np.linspace(0, 600, 20) # note: at least a dimension of hcal cell size=30 of the bins
         self.origin = (0, -72) # (0, 13) for 50 GeV
         self.xrange_radial = [0, 30]
         self.ylim_radial = (2e-1, 2e3)
+        self.ylim_radial_mm = (1e-1, 2e5)
         # self.origin = (0, 0)
         # self.origin = (3.754597092*10, -3.611833191*10)
         
@@ -388,7 +390,7 @@ def plt_radial(e_radial, e_radial_list, events, labels, my_dir=None, cfg=plt_con
     axs[0].set_ylim(plt_config.ylim_radial[0], plt_config.ylim_radial[1])
     axs[0].set_yscale('log')
     # axs[0].set_xscale("log")
-    plt.xlabel("radius [mm]", fontsize=plt_config.font_labelx)
+    plt.xlabel("radius [cells]", fontsize=plt_config.font_labelx)
     axs[0].set_ylabel('mean energy [MeV]', fontsize=plt_config.font_labely)
     axs[1].set_ylabel('ratio to G4', fontsize=plt_config.font_ratio)
     plt.subplots_adjust(hspace=0.1)
@@ -397,7 +399,96 @@ def plt_radial(e_radial, e_radial_list, events, labels, my_dir=None, cfg=plt_con
         fig.tight_layout() 
         plt.savefig(my_dir+'radial.pdf', dpi=100, bbox_inches='tight')
     plt.close()
+
+def plt_radial_mm(e_radial, e_radial_list, events, labels, my_dir=None, cfg=plt_config, title=plt_config.title):
+    fig, axs = plt.subplots(2, 1, figsize=(7,9), height_ratios=[3, 1], sharex=True)
+
+    ## for legend ########################################## 
+    axs[0].hist(np.zeros(1)-10, label=labels[0], color='lightgrey', edgecolor='dimgrey', lw=2, range=(0,1))
+    for i in range(len(e_radial_list)):
+        axs[0].plot(0, 0, linestyle='-', lw=3, color=cfg.color_lines[i], label=labels[i+1])
+    axs[0].set_title(title, fontsize=cfg.font.get_size(), loc='right')
+    # plt.legend(prop=cfg.font, loc=(0.35, 0.78))
+    axs[0].legend(prop=cfg.font, loc='upper right')
+    ########################################################
+
+    # mean and std as binned statistic
+    mean, edges, _ = binned_statistic(
+        e_radial[0], e_radial[1], bins=plt_config.bins_r_mm, statistic="mean"
+    )
+    std, _, _ = binned_statistic(
+        e_radial[0], e_radial[1], bins=plt_config.bins_r_mm, statistic="std"
+    )
+    count, _, _ = binned_statistic(
+        e_radial[0], e_radial[1], bins=plt_config.bins_r_mm, statistic="count"
+    )
+
+    mean_shower = mean * count / events  # mean shower energy per bin
+    std_shower = std / np.sqrt(count)  # std of individual event measures --> std of mean
+    std_shower = std_shower * count / events  # std of shower energy per bin
+
+    # data histogram
+    axs[0].stairs(mean_shower, edges=edges, color="lightgrey", fill=True)
+    # uncertainty band
+    axs[0].stairs(
+        mean_shower + std_shower,
+        edges=edges,
+        baseline=mean_shower - std_shower,
+        color="dimgrey",
+        lw=3,
+        hatch="///",
+    )
+    mean_shower_gen_list, err_gen_list = [], []
+    for i, e_radial_ in enumerate(e_radial_list):
+        # mean and std as binned statistic
+        mean, _, _ = binned_statistic(
+            e_radial_[0], e_radial_[1], bins=edges, statistic="mean"
+        )
+        std, _, _ = binned_statistic(
+            e_radial_[0], e_radial_[1], bins=edges, statistic="std"
+        )
+        count, _, _ = binned_statistic(
+            e_radial_[0], e_radial_[1], bins=edges, statistic="count"
+        )
+        mean_shower_gen = mean * count / events  # mean shower energy per bin
+        mean_shower_gen_list.append(mean_shower_gen)
+        std_shower_gen = std / np.sqrt(count)  # std of individual event measures --> std of mean
+        std_shower_gen = std_shower_gen * count / events  # std of shower energy per bin
+        err_gen_list.append(std_shower_gen)
+        # gen histogram
+        axs[0].stairs(
+            mean_shower_gen,
+            edges=edges,
+            linestyle="-",
+            lw=3,
+            color=plt_config.color_lines[i],
+        )
+        # uncertainty band
+        axs[0].stairs(
+            mean_shower_gen + std_shower_gen,
+            edges=edges,
+            baseline=mean_shower_gen - std_shower_gen,
+            color=plt_config.color_lines[i],
+            alpha=plt_config.alpha,
+            fill=True,
+        )
+
+    # ratio plot on the bottom
+    ratio_plots(axs[1], mean_shower, mean_shower_gen_list, std_shower, err_gen_list, edges, pos=np.array((edges[:-1] + edges[1:])/2), plt_config=plt_config)  
+        
+    axs[0].set_ylim(plt_config.ylim_radial_mm[0], plt_config.ylim_radial_mm[1])
+    axs[0].set_yscale('log')
+    # axs[0].set_xscale("log")
+    plt.xlabel("radius [mm]", fontsize=plt_config.font_labelx)
+    axs[0].set_ylabel('mean energy [MeV]', fontsize=plt_config.font_labely)
+    axs[1].set_ylabel('ratio to G4', fontsize=plt_config.font_ratio)
+    plt.subplots_adjust(hspace=0.1)
     
+    if my_dir is not None:
+        fig.tight_layout() 
+        plt.savefig(my_dir+'radial_mm.pdf', dpi=100, bbox_inches='tight')
+    plt.close()
+   
 def plt_hit_e(hits, hits_list, events, labels, my_dir=None, plt_config=plt_config, title=plt_config.title):
     fig, axs = plt.subplots(2, 1, figsize=(7, 9), height_ratios=[3, 1], sharex=True)
     # for legend ##########################################

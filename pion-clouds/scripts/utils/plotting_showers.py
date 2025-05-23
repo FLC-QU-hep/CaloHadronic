@@ -21,6 +21,8 @@ mpl.rcParams['font.size'] = 25
 mpl.rcParams['legend.frameon'] = False
 mpl.rcParams['text.usetex'] = True
 mpl.rcParams['font.family'] = 'serif'
+mpl.rcParams['mathtext.fontset'] = 'custom'
+mpl.rcParams['mathtext.rm'] = 'serif'
 # mpl.rcParams['axes.aspect'] = 'equal' 
 # mpl.rcParams['figure.autolayout'] = True # for the hit e distr.
 # mpl.rcParams['font.weight'] = 1  # Or you can use a numerical value, e.g., 700
@@ -314,15 +316,15 @@ def plotting_correlations_withCOGy(my_dir, events, events_r): # axis= 0,1,3
     H_r, _, _ = np.histogram2d(to_plot_r, cog_y_r, bins=thebins, range=[_range0, _range1])
     cmax = max(H.max(), H_r.max())
     
-    fig = plt.figure(10, figsize=(30, 8))
-    spec = gridspec.GridSpec(1, 4, width_ratios=[4, 4, 0.5, 3], wspace=0.3)
+    fig = plt.figure(10, figsize=(32, 8.1))
+    spec = gridspec.GridSpec(1, 3, width_ratios=[3.21, 4, 4], wspace=0.3)
     # First subplot
     ax1 = fig.add_subplot(spec[0, 0])
     hist1 = ax1.hist2d(
         to_plot, cog_y, bins=thebins, range=[_range0, _range1],
         cmin=cmin, cmax=cmax #, norm=mpl.colors.LogNorm()
     )
-    ax1.set_title("CaloHadronic", fontsize=font)
+    ax1.set_title("CaloHadronic", fontsize=font, pad=20)
     ax1.set_xlabel("Energy Sum [MeV]", fontsize=font)
     ax1.set_ylabel("COG along y", fontsize=font)
     
@@ -332,30 +334,34 @@ def plotting_correlations_withCOGy(my_dir, events, events_r): # axis= 0,1,3
         to_plot_r, cog_y_r, bins=thebins, range=[_range0, _range1],
         cmin=cmin, cmax=cmax #, norm=mpl.colors.LogNorm()
     )
-    ax2.set_title("Geant4", fontsize=font)
+    ax2.set_title("Geant4", fontsize=font, pad=20)
     ax2.set_xlabel("Energy Sum [MeV]", fontsize=font)
     ax2.set_ylabel("COG along y", fontsize=font)
     
-    ax3 = fig.add_subplot(spec[0, 2])
-    ax3.axis('off')
-    cbar1 = fig.colorbar(hist2[3], ax=ax3, orientation='vertical', fraction=0.42, location='left')
+    # ax3 = fig.add_subplot(spec[0, 2])
+    # ax3.axis('off')
+    cbar1 = fig.colorbar(hist2[3], ax=ax2, orientation='vertical') #, fraction=0.42, location='left')
     cbar1.set_label("Counts", fontsize=font)
     cbar1.ax.yaxis.set_ticks_position('right')
     # cbar1.ax.yaxis.set_label_position('left')
        
-    ax4 = fig.add_subplot(spec[0, 3])
+    ax4 = fig.add_subplot(spec[0, 2])
     # weighted difference
-    print(H.shape) 
     weights = np.sqrt((H_r+H)) 
     weighted_diff = np.abs((H_r-H)) * weights
-    print(weighted_diff.shape)
     p4 = ax4.pcolormesh(xedges, yedges, weighted_diff, cmap='Greens')
-    ax4.set_title("$|Geant4 - CaloHadronic| \cdot  \sqrt{Geant4 + CaloHadronic} $", fontsize=font-7)
+    ax4.set_title(r"|Geant4 - CaloHadronic| $\cdot \sqrt{\text{Geant4} + \text{CaloHadronic}} $", fontsize=font-5, pad=20)
     ax4.set_xlabel("Energy Sum [MeV]", fontsize=font)
     ax4.set_ylabel("COG along y", fontsize=font)
-    fig.colorbar(p4, ax=ax4, location='bottom')
-    # fig.colorbar(hist4[3], ax=ax4, location='bottom')
-     
+    ax4.set_ylim(_range1)
+    ax4.set_xlim(_range0)
+    
+    # ax5 = fig.add_subplot(spec[0, 4])
+    # ax5.axis('off')
+    cb = fig.colorbar(p4, ax=ax4, orientation='vertical') #, fraction=0.42)
+    cb.ax.yaxis.set_ticks_position('right')
+    
+    # tight_layout(fig) 
     plt.savefig(f"{my_dir}/Correlation_COGy_histograms.pdf") 
     plt.close()
     
@@ -372,15 +378,15 @@ def plotting_correlations_withN(my_dir, events, events_r): # axis= 0,1,3
     H_r, _, _ = np.histogram2d(to_plot_r, n_r, bins=thebins, range=[_range0, _range1])
     cmax = max(H.max(), H_r.max())
     
-    fig = plt.figure(10, figsize=(28,8))
-    spec = gridspec.GridSpec(1, 4, width_ratios=[4, 4, 0.5, 3], wspace=0.3)
+    fig = plt.figure(10, figsize=(32, 8.1))
+    spec = gridspec.GridSpec(1, 3, width_ratios=[3.21, 4, 4], wspace=0.3)
     # First subplot
     ax1 = fig.add_subplot(spec[0, 0])
     hist1 = ax1.hist2d(
         to_plot, n, bins=thebins, range=[_range0, _range1],
         cmin=cmin, cmax=cmax #, norm=mpl.colors.LogNorm()
     )
-    ax1.set_title("CaloHadronic", fontsize=font)
+    ax1.set_title("CaloHadronic", fontsize=font, pad=20)
     ax1.set_xlabel("Energy Sum [MeV]", fontsize=font)
     ax1.set_ylabel("# of Hits", fontsize=font)
     
@@ -390,28 +396,28 @@ def plotting_correlations_withN(my_dir, events, events_r): # axis= 0,1,3
         to_plot_r, n_r, bins=thebins, range=[_range0, _range1],
         cmin=cmin, cmax=cmax #, norm=mpl.colors.LogNorm()
     )
-    ax2.set_title("Geant4", fontsize=font)
+    ax2.set_title("Geant4", fontsize=font, pad=20)
     ax2.set_xlabel("Energy Sum [MeV]", fontsize=font)
     ax2.set_ylabel("# of Hits", fontsize=font)
     
-    ax3 = fig.add_subplot(spec[0, 2])
-    ax3.axis('off')
-    cbar1 = fig.colorbar(hist2[3], ax=ax3, orientation='vertical', pad=-0.1, location='left')
+    # ax3 = fig.add_subplot(spec[0, 2])
+    # ax3.axis('off')
+    cbar1 = fig.colorbar(hist2[3], ax=ax2, orientation='vertical') #, pad=-0.1, location='left')
     cbar1.set_label("Counts", fontsize=font)
     cbar1.ax.yaxis.set_ticks_position('right')
     # cbar1.ax.yaxis.set_label_position('left')
     
-    ax4 = fig.add_subplot(spec[0, 3])
+    ax4 = fig.add_subplot(spec[0, 2])
     # weighted difference
-    print(H.shape) 
     weights = np.sqrt((H_r+H)) 
     weighted_diff = np.abs((H_r-H)) * weights
-    print(weighted_diff.shape)
     p4 = ax4.pcolormesh(xedges, yedges, weighted_diff, cmap='Greens')
-    ax4.set_title("$|Geant4 - CaloHadronic| \cdot  \sqrt{Geant4 + CaloHadronic} $", fontsize=font-7)
+    ax4.set_title(r"|Geant4 - CaloHadronic| $\cdot \sqrt{\text{Geant4} + \text{CaloHadronic}} $", fontsize=font-5, pad=20)
     ax4.set_xlabel("Energy Sum [MeV]", fontsize=font)
     ax4.set_ylabel("COG along y", fontsize=font)
-    fig.colorbar(p4, ax=ax4, location='bottom')
+    ax4.set_ylim(_range1)
+    ax4.set_xlim(_range0)
+    fig.colorbar(p4, ax=ax4, orientation='vertical')
     # fig.colorbar(hist4[3], ax=ax4, location='bottom')
      
     plt.savefig(f"{my_dir}/Correlation_N_histograms.pdf") 
@@ -463,7 +469,7 @@ def plt_3dShower(image, model_title='ML Model', save_title='ML_model', my_dir=''
 
     axExIm1 = figExIm.add_subplot(projection='3d')
     image = image+0.0
-
+    
     masked_array = np.ma.array(image, mask=(image<=0.005))
     cmap = mpl.cm.viridis
     axExIm1.view_init(elev=20.0, azim=20.0)
@@ -494,7 +500,7 @@ def plt_3dShower(image, model_title='ML Model', save_title='ML_model', my_dir=''
     cmap = mpl.cm.jet
     my_cmap = truncate_colormap(cmap, 0.0, 0.7)
     transparent = (0.1, 0.1, 0.9, 0.0)
-
+    
     axExIm1.set_xticklabels([])
     axExIm1.set_yticklabels([])
     axExIm1.set_zticklabels([])
@@ -510,6 +516,13 @@ def plt_3dShower(image, model_title='ML Model', save_title='ML_model', my_dir=''
     axExIm1.set_xlim([xL.mean() -limit_shift , xL.mean() +limit_shift])
     axExIm1.set_ylim([0, 78])
     axExIm1.set_zlim([zL.mean() -limit_shift , zL.mean() +limit_shift])
+    
+    xx, zz = np.meshgrid([xL.mean() -limit_shift, xL.mean() +limit_shift], [zL.mean() -limit_shift, zL.mean() +limit_shift])
+    distance_from_center = np.sqrt(xx**2 + zz**2)
+    norm = (distance_from_center - distance_from_center.min()) / (distance_from_center.max() - distance_from_center.min())
+    axExIm1.plot_surface(xx, [[30,30], [30,30]], zz, alpha=0.1, facecolors=plt.cm.Reds_r(norm), shade=False, rstride=1, cstride=1, antialiased=False)
+    axExIm1.grid(True)
+    axExIm1.xaxis._axinfo['grid'].update(color='gray', linestyle='--', linewidth=0.2, alpha=0.2)
     
     to_zero_values = ((xL== xL.mean()-limit_shift) | (xL== xL.mean()+limit_shift)) | ((zL== zL.mean()-limit_shift) | (zL== zL.mean()+limit_shift))
     cL[to_zero_values] = 0

@@ -7,6 +7,19 @@ import ot
 
 __all__ = ["heun_integrate", "CNF", "FullyConnected", "ConcatSquash"]
 
+####################################################################################
+# PointCountFM is taken from:
+# https://github.com/FLC-QU-hep/PointCountFM by Thorsten Buss
+
+
+# PointCountFM
+# A conditional flow matching model to generate the number of points per layer in a particle shower. 
+# The model can be used as part of a generative model for particle showers. 
+# It generates the number of points per layer in a particle shower given the incident energy.
+####################################################################################
+
+
+
 class FullyConnected(nn.Module):
     def __init__(
         self,
