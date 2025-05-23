@@ -90,14 +90,6 @@ You can run the plotting scripts of CaloHadronic:
 python pion-clouds/scripts/evaluation/occ-scale.py --load_dataset_and_project 1 --compute_features 1 --load_array_and_plot 1
 python pion-clouds/scripts/evaluation/occ-scale_MultipleEnergies.py
 ```
-### Top contributors:
-
-<a href="https://github.com/FLC-QU-hep/CaloHadronic/graphs/contributors">
-  <img src="https://contrib.rocks/image?repo=othneildrew/Best-README-Template" alt="contrib.rocks image" />
-</a>
-
-<p align="right">(<a href="#readme-top">back to top</a>)</p>
-
 
 ## Contact
 
