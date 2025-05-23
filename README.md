@@ -30,10 +30,11 @@ python pion-clouds/scripts/SF_arrays.py
 ```
 
 ## Training
-You can run the training of #PointsFM:
+You can run the training of PointCountFM:
 ```
 python pion-clouds/scripts/shower_flow_train.py
 ```
+Note: the architecture of is taken from ```https://github.com/FLC-QU-hep/PointCountFM```
 
 You can run the training of ecal and hcal edm-diffusion:
 ```
