@@ -13,7 +13,6 @@ import matplotlib.gridspec as gridspec
 from matplotlib import pyplot, image, transforms
 import numpy as np
 import h5py
-import argparse
 import matplotlib.pyplot as plt
 import importlib
 import multiprocessing as mp
@@ -34,24 +33,14 @@ mpl.rcParams['text.usetex'] = False #True
 mpl.rcParams['font.family'] = 'serif'
 
 name='HGx9_CNF_ECAL_HCAL_30'
-parser = argparse.ArgumentParser()
-parser.add_argument('--load_dataset_and_project', default=1, type=int)
-parser.add_argument('--compute_features', default=1, type=int)
-parser.add_argument('--load_array_and_plot', default=1, type=int)
-params = parser.parse_args()
-
-load_dataset_and_project = params.load_dataset_and_project
-compute_features = params.compute_features
-load_array_and_plot = params.load_array_and_plot
-
-for b in [load_dataset_and_project, compute_features, load_array_and_plot]:
-    if (b!=0) & (b!=1):
-        raise ValueError(f"{b} must be boolean! ")
+load_dataset_and_project = False
+compute_features = False
+load_array_and_plot = True
 
 both_to_save = True
-fake_SHOWERS_TO_SAVE, real_SHOWERS_TO_SAVE =  True, True
+fake_SHOWERS_TO_SAVE, real_SHOWERS_TO_SAVE =  False, True
 
-shw = 50000
+shw = 50002
 e_min, e_max = 10, 90 #49,51 #18, 22 #84,86 #13,17
 print('e_min:', e_min, 'e_max: ', e_max)
  
@@ -70,11 +59,11 @@ else: only_hcal_flag = False
 print('only_hcal_flag ', only_hcal_flag)
 
 if load_dataset_and_project:
-    dataset_path = '../dataset/hdf5_HGx9/all_interactions_pions_regular_ECAL+HCAL_10-90GeV_{}.slcio.root_with_time.hdf5' 
+    dataset_path = '/data/dust/user/mmozzani/pion-clouds/dataset/hdf5_HGx9/all_interactions_pions_regular_ECAL+HCAL_10-90GeV_{}.slcio.root_with_time.hdf5' 
 
     if fake_SHOWERS_TO_SAVE:    
-        fake_showers = h5py.File('../files/generated_showers/'+name+'/gen_showers_'+inc_en+str(shw)+'.hdf5', 'r')['events'][:]   
-        fake_inc_energies = h5py.File('../files/generated_showers/'+name+'/gen_showers_'+inc_en+str(shw)+'.hdf5', 'r')['energy'][:]   
+        fake_showers = h5py.File('/data/dust/user/mmozzani/pion-clouds/files/generated_showers/'+name+'/gen_showers_'+inc_en+str(shw)+'.hdf5', 'r')['events'][:]   
+        fake_inc_energies = h5py.File('/data/dust/user/mmozzani/pion-clouds/files/generated_showers/'+name+'/gen_showers_'+inc_en+str(shw)+'.hdf5', 'r')['energy'][:]   
         fake_inc_energies = (fake_inc_energies+1)/2*100   
         shw = fake_showers.shape[0] #shww
         print(shw) 
@@ -95,12 +84,17 @@ if load_dataset_and_project:
             energy = h5py.File(dataset_path.format(file_idx[i]), 'r')['energy'][:] 
             energy_mask = (energy.reshape(-1) > e_min) & (energy.reshape(-1) < e_max)
             idx_sorted = np.argsort(energy[energy_mask].reshape(-1))
-            idx_showers = np.linspace(1, energy_mask.sum()-1, shw_taken_per_file).astype(int)   
+            idx_showers = np.linspace(1, energy_mask.sum()-1, shw_taken_per_file).astype(int)
+            # idx = np.sort((np.random.rand(1, shw_taken_per_file) * energy_mask.sum())).astype(int)[0]   
             idx_start = shw_taken_per_file * i 
             idx_end = shw_taken_per_file * (i+1)
             inc_energies[idx_start:idx_end] = energy[energy_mask][idx_sorted][idx_showers]
             real_showers[idx_start:idx_end] = f[energy_mask][idx_sorted][idx_showers,:4]
+            # point_per_layer_file[idx_start:idx_end] = Nperlayer[idx ] 
         del f 
+        # max_len = (real_showers[:, 3] > 0).sum(axis=1).max()
+        # real_showers = real_showers[:, :, -max_len:]   
+        # if name.split('_')[0]=='HGx9': real_showers[:,[0,1,2,3],:] = real_showers[:,[0,2,1,3],:]
 
         # sorting real_shw per number of points (fake ones are already sorted))
         idx_sorted_real = np.argsort(np.sum(real_showers[:,3]>0, axis=1))
@@ -123,17 +117,17 @@ y_bins = np.arange(Ymin, Ymax+1, 1)
 y_bins_ecal = np.arange(Ymin, Ymin_hcal+1, 1)
 y_bins_hcal = np.arange(Ymin_hcal, Ymax+1, 1)
 
-os.makedirs('../figs/occ-scale/'+name, exist_ok=True)
-directory = '../figs/occ-scale/'+name+'/'
+os.makedirs('/data/dust/user/mmozzani/pion-clouds/figs/occ-scale/'+name, exist_ok=True)
+directory = '/data/dust/user/mmozzani/pion-clouds/figs/occ-scale/'+name+'/'
 
 #save arrays
-os.makedirs('../files/projected_array/'+name, exist_ok=True)
-os.makedirs('../files/projected_array/'+name+'/'+inc_en+str(shw), exist_ok=True)
-save_dir_fake = '../files/projected_array/'+name+'/'+inc_en+str(shw) 
+os.makedirs('/data/dust/user/mmozzani/pion-clouds/files/projected_array/'+name, exist_ok=True)
+os.makedirs('/data/dust/user/mmozzani/pion-clouds/files/projected_array/'+name+'/'+inc_en+str(shw), exist_ok=True)
+save_dir_fake = '/data/dust/user/mmozzani/pion-clouds/files/projected_array/'+name+'/'+inc_en+str(shw) 
 
-os.makedirs('../files/projected_array/Geant4/', exist_ok=True)
-os.makedirs('../files/projected_array/Geant4/'+inc_en+str(shw), exist_ok=True)
-save_dir_real = '../files/projected_array/Geant4/'+inc_en+str(shw) 
+os.makedirs('/data/dust/user/mmozzani/pion-clouds/files/projected_array/Geant4/', exist_ok=True)
+os.makedirs('/data/dust/user/mmozzani/pion-clouds/files/projected_array/Geant4/'+inc_en+str(shw), exist_ok=True)
+save_dir_real = '/data/dust/user/mmozzani/pion-clouds/files/projected_array/Geant4/'+inc_en+str(shw) 
 
 os.makedirs(directory+'Features_/', exist_ok=True)
 os.makedirs(directory+'Features_/'+inc_en+str(shw), exist_ok=True)
@@ -308,24 +302,25 @@ if compute_features:
         print('loading sim done')
          
     if (both_to_save) & (shw<15000):
-        # to delete 
-        plotting_correlations(directory_2, events.astype(np.float16), events_r.astype(np.float16), axis=0)
-        print('correlation plots done')
+        # plotting_correlations(directory_2, events.astype(np.float16), events_r.astype(np.float16), axis=0)
+        # print('correlation plots done')
         plotting_correlations_withCOGy(directory_2, events.astype(np.float16), events_r.astype(np.float16))
         print('correlation cogy plots done')
         plotting_correlations_withN(directory_2, events.astype(np.float16), events_r.astype(np.float16))
         print('correlation n hits plots done')
-
-        directory_shw = directory_2+'3Dplots/'
-        os.makedirs(directory_shw, exist_ok=True)
-        i = int(shw/2)
-        ev, ev_names, ev_title = [], [], []
-        for i in np.arange(i, i+20, 1): 
-            ev.append(events[i].astype(np.float16))
-            ev_names.append("3d_shower_fake_"+str(i))
-            ev_title.append("CaloHadronic")
-        plt_3dShowers([events_r[i].astype(np.float16)] + ev, model_titles=["Geant4"] + ev_title, save_titles=["3d_shower_real"] + ev_names, my_dir=directory_shw)
-        print('3d shower plot done') 
+        sys.exit()
+        # directory_shw = directory_2+'3Dplots/'
+        # os.makedirs(directory_shw, exist_ok=True)
+        # i = int(shw/2) 
+        # ev, ev_names, ev_title = [], [], []
+        # for i in range(shw): #np.arange(i, i+20, 1): 
+        #     ev.append(events[i].astype(np.float16))
+        #     ev_names.append("3d_shower_fake_"+str(i))
+        #     ev_title.append("CaloHadronic")
+        # # plt_3dShowers([events_r[i+1].astype(np.float16)], model_titles=["Geant4"], save_titles=["3d_shower_real"], my_dir=directory_shw)
+        # plt_3dShowers([events_r[i].astype(np.float16)] + ev, model_titles=["Geant4"] + ev_title, save_titles=["3d_shower_real"] + ev_names, my_dir=directory_shw)
+        # print('3d shower plot done') 
+        # sys.exit()
 
     print('Getting features...')
 
@@ -391,7 +386,13 @@ if compute_features:
         for k, var in enumerate(mylist_r): 
             np.save(save_dir_real+'/'+str(cog_names_r[k])+'.npy', var) 
 
-
+def shower_for_radial_in_mm(radial_ecal, radial_hcal):
+    # ecal has cell sizes of 5 mm while hcal of 30 mm 
+    radial_ecal = radial_ecal * 5
+    radial_hcal = radial_hcal * 30
+    return np.concatenate((radial_ecal, radial_hcal), axis=1)
+    
+    
 print('SAVE DONE')
 if load_array_and_plot:
     print('LOADING...')
@@ -411,12 +412,17 @@ if load_array_and_plot:
     plt.clf()
     my_model_label = "CaloHadronic"
     num_of_shw = len(real_dict["e_sum_list_r"])
-     
+      
     plt_spinal(real_dict["e_layers_list_r"], [fake_dict["e_layers_list"]], num_of_shw, labels=['geant4', my_model_label], my_dir=directory_2)
     print('done spinal')
     plt_radial(real_dict["e_radial_r"], [fake_dict["e_radial"]], num_of_shw, labels=['geant4', my_model_label], my_dir=directory_2)
     print('done radial')
-    
+    fake_rad_mm = shower_for_radial_in_mm(fake_dict["e_radial_ecal"], fake_dict["e_radial_hcal"])
+    real_rad_mm = shower_for_radial_in_mm(real_dict["e_radial_ecal_r"], real_dict["e_radial_hcal_r"])
+    plt_radial_mm(real_rad_mm, [fake_rad_mm], num_of_shw, labels=['geant4', my_model_label], my_dir=directory_2)
+    print('done radial mm')
+    sys.exit()
+     
     cog_r = [real_dict['cog_x_r']-0.5, real_dict['cog_y_r'], real_dict['cog_z_r']-0.5]
     cog = [[fake_dict['cog_x']], [fake_dict['cog_y']], [fake_dict['cog_z']] ]
     plt_cog(cog_r, cog, num_of_shw, labels=['geant4', my_model_label], my_dir=directory_2)
@@ -462,8 +468,11 @@ if load_array_and_plot:
     kl_dictionary = kl_table(real_dict, fake_dict, shw=num_of_shw, threshold=threshold, my_dir = dir3)
     wd_dictionary = wd_table(real_dict, fake_dict, shw=num_of_shw, threshold=threshold, my_dir = dir3)
     plt_wdPlot(wd_dictionary, kl_dictionary, my_dir=dir3)
-    print('     Table wdist...') 
-    print(wd_dictionary)
-    print('     Table kl...') 
-    print(kl_dictionary)  
-    print(name, 'done')
+    
+    print('\n   Table wdist...') 
+    for key, value in wd_dictionary.items(): 
+        print(key, ':  ', value)
+        
+    print('\n   Table kl...') 
+    for key, value in kl_dictionary.items(): 
+        print(key, ':  ', value)
