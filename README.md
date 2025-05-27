@@ -49,7 +49,7 @@ conda env create -f environment.yml
 ```
 
 ## Dataset 
-You can get the data of CaloHadronic from: 
+You can download the dataset of CaloHadronic from: 
 ```
 wget https://doi.org/10.5281/zenodo.15301636
 ```
