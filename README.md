@@ -51,14 +51,11 @@ conda env create -f environment.yml
 ## Dataset 
 You can get the data of CaloHadronic from: 
 ```
-wget zenodo-link
+wget https://doi.org/10.5281/zenodo.15301636
 ```
 note: there is one file containing ~20k showers 
 
-You can get the raw root file with all Geant4 steps: 
-```
-wget zenodo-link
-```
+At the same link you can get the raw root file with all Geant4 steps.
 
 You can get the data needed to train the PointCountFM by running:
 ```
