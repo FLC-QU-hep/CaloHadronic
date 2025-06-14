@@ -100,7 +100,7 @@ Martina Mozzanica - [@linkedin](https://www.linkedin.com/in/martina-mozzanica-20
 <!-- LICENSE -->
 ## License
 
-Distributed under the Unlicense License. See `LICENSE` for more information.
+This project is licensed under the MIT License - see `LICENSE` for more information.
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
