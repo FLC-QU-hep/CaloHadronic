@@ -72,7 +72,7 @@ python pion-clouds/scripts/shower_flow_train.py
 ```
 Note: the architecture of PointCountFM is taken from [https://github.com/FLC-QU-hep/PointCountFM](https://github.com/FLC-QU-hep/PointCountFM)
 
-You can run the training of ecal and hcal edm-diffusion:
+You can run the training of ECal and HCal EDM-diffusion:
 ```
 python pion-clouds/scripts/training.py --type ecal 
 python pion-clouds/scripts/training.py --type hcal
