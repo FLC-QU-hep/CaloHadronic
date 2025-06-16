@@ -13,6 +13,7 @@ from mpl_toolkits.mplot3d import proj3d
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 from tqdm import tqdm 
 from memory_profiler import profile
+import sys 
 
 mpl.rcParams['xtick.labelsize'] = 18    
 mpl.rcParams['ytick.labelsize'] = 18
@@ -303,18 +304,70 @@ def plotting_correlations(my_dir, events, events_r, axis=0): # axis= 0,1,3
     elif axis==3: plt.savefig(f"{my_dir}/Correlation_histograms_z.png")  
     plt.close()
     
-def plotting_correlations_withCOGy(my_dir, events, events_r): # axis= 0,1,3
-    _range0= [0, 2400]
-    _range1= [0, 78]  
-    cmin = 0.001  
-    to_plot = np.array(events).sum(axis=3).sum(axis=1).sum(axis=1)     #sum over z and x 
-    to_plot_r = np.array(events_r).sum(axis=3).sum(axis=1).sum(axis=1) #sum over z and x
-    cog_y = get_cog(events)[1] 
-    cog_y_r = get_cog(events_r)[1]  
-    thebins = [70, 70]
+def plotting_correlations_withCOGy(my_dir, fake, real, inc_en,
+                                labels=['$E_{sum}$', '$cog_{y}$'], 
+                                names=['Geant4', 'CaloHadronic']): # axis= 0,1,3
+    _range0= [9.5, 11.6] #[0, 2400]
+    _range1= [0, 78]
+    color_cmap = 'Oranges'  
+    vmin = 0 
+    to_plot = fake[0]     #sum over z and x 
+    to_plot_r = real[0] #sum over z and x
+    cog_y = fake[1] 
+    cog_y_r = real[1]
+    
+    # # check the logarithm dependence
+    # title = ["Incident Energy [MeV]", "Energy Sum [MeV]"]
+    # arrays = [inc_en, [to_plot_r, to_plot]]
+    # n_bins_list = [10, 30, 50, 70, 90]
+    # j=0
+    # for ii in range(len(n_bins_list)):
+    #     for k in range(2):
+    #         a, b = arrays[k]
+    #         logE = np.log(a[inc_en[0]>0]+1e-10)
+    #         logE_gen = np.log(b[inc_en[1]>0]+1e-10)
+            
+    #         idx = np.argsort(logE)
+    #         idx_gen = np.argsort(logE_gen)
+    #         logE = logE[idx].flatten()
+    #         logE_gen = logE_gen[idx_gen].flatten()
+    #         new_cog = cog_y_r[inc_en[0]>0][idx].flatten()
+    #         new_cog_gen = cog_y[inc_en[1]>0][idx_gen].flatten()
+
+    #         n_bins = n_bins_list[ii]
+    #         bins = np.linspace(np.min(np.concatenate([logE, logE_gen])), np.max(np.concatenate([logE, logE_gen])), n_bins + 1)
+    #         bin_centers = 0.5 * (bins[:-1] + bins[1:])  
+    #         cogy, loge, cogy_gen, loge_gen = [], [], [], []
+            
+    #         for i in range(n_bins): 
+    #             in_bin = (logE >= bins[i]) & (logE < bins[i+1])
+    #             in_bin_gen = (logE_gen >= bins[i]) & (logE_gen < bins[i+1])
+    #             if in_bin.sum() == 0: continue
+    #             else:
+    #                 cogy.append(np.mean(new_cog[in_bin])) 
+    #                 loge.append(np.mean(logE[in_bin]))  
+    #                 cogy_gen.append(np.mean(new_cog_gen[in_bin_gen]))
+    #                 loge_gen.append(np.mean(logE_gen[in_bin_gen]))
+            
+    #         plt.figure(11, figsize=(16, 25))
+    #         j+=1
+    #         plt.subplot(len(n_bins_list),2,j)
+    #         plt.title("COG along y vs Log("+title[k]+"): bins --> "+str(n_bins), fontsize=font-10)
+    #         plt.plot(loge, cogy, 'o-', color='k', label='Geant4')
+    #         plt.plot(loge_gen, cogy_gen, 'o-', color='orange', label='CaloHadronic')
+    #         if k==0: plt.legend(fontsize=font-10, loc='upper left')
+    #         else: plt.legend(fontsize=font-10, loc='upper right')
+    #         plt.xlabel("Log("+title[k]+")", fontsize=font-10)
+    #         plt.ylabel("COG along y [layers]", fontsize=font-10)
+    # plt.tight_layout()
+    # plt.savefig(f"{my_dir}/Energies_vs_COGy.png")
+    # plt.close()
+    # sys.exit()
+
+    thebins = [36, 36]
     H, xedges, yedges = np.histogram2d(to_plot , cog_y , bins=thebins, range=[_range0, _range1])
     H_r, _, _ = np.histogram2d(to_plot_r, cog_y_r, bins=thebins, range=[_range0, _range1])
-    cmax = max(H.max(), H_r.max())
+    vmax = max(H.max(), H_r.max())
     
     fig = plt.figure(10, figsize=(32, 8.1))
     spec = gridspec.GridSpec(1, 3, width_ratios=[3.21, 4, 4], wspace=0.3)
@@ -322,7 +375,7 @@ def plotting_correlations_withCOGy(my_dir, events, events_r): # axis= 0,1,3
     ax1 = fig.add_subplot(spec[0, 0])
     hist1 = ax1.hist2d(
         to_plot, cog_y, bins=thebins, range=[_range0, _range1],
-        cmin=cmin, cmax=cmax #, norm=mpl.colors.LogNorm()
+        vmin=vmin, vmax=vmax, cmap=color_cmap #, norm=mpl.colors.LogNorm()
     )
     ax1.set_title("CaloHadronic", fontsize=font, pad=20)
     ax1.set_xlabel("Energy Sum [MeV]", fontsize=font)
@@ -332,7 +385,7 @@ def plotting_correlations_withCOGy(my_dir, events, events_r): # axis= 0,1,3
     ax2 = fig.add_subplot(spec[0, 1])
     hist2 = ax2.hist2d(
         to_plot_r, cog_y_r, bins=thebins, range=[_range0, _range1],
-        cmin=cmin, cmax=cmax #, norm=mpl.colors.LogNorm()
+        vmin=vmin, vmax=vmax, cmap=color_cmap #, norm=mpl.colors.LogNorm()
     )
     ax2.set_title("Geant4", fontsize=font, pad=20)
     ax2.set_xlabel("Energy Sum [MeV]", fontsize=font)
@@ -346,11 +399,10 @@ def plotting_correlations_withCOGy(my_dir, events, events_r): # axis= 0,1,3
     # cbar1.ax.yaxis.set_label_position('left')
        
     ax4 = fig.add_subplot(spec[0, 2])
-    # weighted difference
-    weights = np.sqrt((H_r+H)) 
-    weighted_diff = np.abs((H_r-H)) * weights
-    p4 = ax4.pcolormesh(xedges, yedges, weighted_diff, cmap='Greens')
-    ax4.set_title(r"|Geant4 - CaloHadronic| $\cdot \sqrt{\text{Geant4} + \text{CaloHadronic}} $", fontsize=font-5, pad=20)
+    weighted_diff = np.transpose(H_r-H) 
+    val = np.abs(weighted_diff).max()
+    p4 = ax4.pcolormesh(xedges, yedges, weighted_diff, vmin=-val, vmax=val, cmap='PRGn')
+    ax4.set_title(r"Geant4 - CaloHadronic", fontsize=font, pad=20)
     ax4.set_xlabel("Energy Sum [MeV]", fontsize=font)
     ax4.set_ylabel("COG along y", fontsize=font)
     ax4.set_ylim(_range1)
@@ -362,21 +414,25 @@ def plotting_correlations_withCOGy(my_dir, events, events_r): # axis= 0,1,3
     cb.ax.yaxis.set_ticks_position('right')
     
     # tight_layout(fig) 
-    plt.savefig(f"{my_dir}/Correlation_COGy_histograms.pdf") 
+    plt.savefig(f"{my_dir}/Correlation_IncEn_COGy_histograms_"+str(thebins[0])+".pdf") 
     plt.close()
     
-def plotting_correlations_withN(my_dir, events, events_r): # axis= 0,1,3
+    
+def plotting_correlations_withN(my_dir, fake, real, 
+                                labels=['$E_{sum}$', 'N_{Hits}'], 
+                                names=['Geant4', 'CaloHadronic']): # axis= 0,1,3
     _range0= [0, 2400]
     _range1= [0, 2500]  
-    cmin = 0.001 
-    to_plot = np.array(events).sum(axis=3).sum(axis=1).sum(axis=1)     #sum over z and x 
-    to_plot_r = np.array(events_r).sum(axis=3).sum(axis=1).sum(axis=1) #sum over z and x
-    n = (np.reshape(events,[events.shape[0], -1]) > 0).sum(axis=1) 
-    n_r = (np.reshape(events_r,[events_r.shape[0], -1]) > 0).sum(axis=1) 
-    thebins = [70, 70]
+    color_cmap = 'Oranges'
+    vmin = 0
+    to_plot = fake[0]     #sum over z and x 
+    to_plot_r = real[0] #sum over z and x
+    n = fake[1]
+    n_r = real[1] 
+    thebins = [36, 36]
     H, xedges, yedges = np.histogram2d(to_plot , n, bins=thebins, range=[_range0, _range1])
     H_r, _, _ = np.histogram2d(to_plot_r, n_r, bins=thebins, range=[_range0, _range1])
-    cmax = max(H.max(), H_r.max())
+    vmax = max(H.max(), H_r.max())
     
     fig = plt.figure(10, figsize=(32, 8.1))
     spec = gridspec.GridSpec(1, 3, width_ratios=[3.21, 4, 4], wspace=0.3)
@@ -384,21 +440,21 @@ def plotting_correlations_withN(my_dir, events, events_r): # axis= 0,1,3
     ax1 = fig.add_subplot(spec[0, 0])
     hist1 = ax1.hist2d(
         to_plot, n, bins=thebins, range=[_range0, _range1],
-        cmin=cmin, cmax=cmax #, norm=mpl.colors.LogNorm()
+        vmin=vmin, vmax=vmax, cmap =color_cmap 
     )
     ax1.set_title("CaloHadronic", fontsize=font, pad=20)
     ax1.set_xlabel("Energy Sum [MeV]", fontsize=font)
-    ax1.set_ylabel("# of Hits", fontsize=font)
+    ax1.set_ylabel("Number of hits", fontsize=font)
     
     # Second subplot    
     ax2 = fig.add_subplot(spec[0, 1])
     hist2 = ax2.hist2d(
         to_plot_r, n_r, bins=thebins, range=[_range0, _range1],
-        cmin=cmin, cmax=cmax #, norm=mpl.colors.LogNorm()
+        vmin=vmin, vmax=vmax, cmap =color_cmap #, norm=mpl.colors.LogNorm()
     )
     ax2.set_title("Geant4", fontsize=font, pad=20)
     ax2.set_xlabel("Energy Sum [MeV]", fontsize=font)
-    ax2.set_ylabel("# of Hits", fontsize=font)
+    ax2.set_ylabel("Number of Hits", fontsize=font)
     
     # ax3 = fig.add_subplot(spec[0, 2])
     # ax3.axis('off')
@@ -408,19 +464,18 @@ def plotting_correlations_withN(my_dir, events, events_r): # axis= 0,1,3
     # cbar1.ax.yaxis.set_label_position('left')
     
     ax4 = fig.add_subplot(spec[0, 2])
-    # weighted difference
-    weights = np.sqrt((H_r+H)) 
-    weighted_diff = np.abs((H_r-H)) * weights
-    p4 = ax4.pcolormesh(xedges, yedges, weighted_diff, cmap='Greens')
-    ax4.set_title(r"|Geant4 - CaloHadronic| $\cdot \sqrt{\text{Geant4} + \text{CaloHadronic}} $", fontsize=font-5, pad=20)
+    weighted_diff = np.transpose(H_r-H) 
+    val = np.abs(weighted_diff).max() 
+    p4 = ax4.pcolormesh(xedges, yedges, weighted_diff, vmin=-val, vmax=val, cmap='PRGn')
+    ax4.set_title(r"Geant4 - CaloHadronic", fontsize=font, pad=20)
     ax4.set_xlabel("Energy Sum [MeV]", fontsize=font)
-    ax4.set_ylabel("COG along y", fontsize=font)
+    ax4.set_ylabel("Number of hits", fontsize=font)
     ax4.set_ylim(_range1)
     ax4.set_xlim(_range0)
     fig.colorbar(p4, ax=ax4, orientation='vertical')
     # fig.colorbar(hist4[3], ax=ax4, location='bottom')
      
-    plt.savefig(f"{my_dir}/Correlation_N_histograms.pdf") 
+    plt.savefig(f"{my_dir}/Correlation_N_histograms_"+str(thebins[0])+".pdf") 
     plt.close()
 
 

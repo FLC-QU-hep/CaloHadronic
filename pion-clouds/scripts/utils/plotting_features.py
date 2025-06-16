@@ -94,8 +94,8 @@ class Configs():
         # self.ylim_hits = (10, 8*1e5)
     #x y z
         self.bins_xz = 35
-        self.bins_y = 78
-        self.xyz_ranges = [(0, 180), (0, 77), (0, 180)] 
+        self.bins_y = 78 
+        self.xyz_ranges = [(-450, 450), (0, 77), (-450, 450)] 
         
     #CoG
         self.bins_cog = 30  
@@ -175,15 +175,15 @@ def plt_cog(cog, cog_list, shw, labels, my_dir=None, plt_config=plt_config, titl
 
     for k, j in enumerate([0, 2, 1]):
         axs[0, k].set_xlim(plt_config.cog_ranges[j])
-        # real data
+        # real data 
         h_data = axs[0, k].hist(
             np.array(cog[j]),
             bins=plt_config.bins_cog,
             color="lightgrey",
             range=plt_config.cog_ranges[j],
             rasterized=True,
-        )
-        # uncertainty band
+        ) 
+        # uncertainty band 
         err_data = np.sqrt(h_data[0])
         axs[0, k].stairs(
             h_data[0] + err_data,
@@ -238,7 +238,8 @@ def plt_cog(cog, cog_list, shw, labels, my_dir=None, plt_config=plt_config, titl
         ratio_plots(axs[1,k], h_data[0], data_gen_list, err_data[0], err_gen_list, h_data[1], pos=np.array((h_data[1][:-1] + h_data[1][1:])/2), plt_config=plt_config)
         axs[0, k].set_ylim(0, max(h_data[0]) + max(h_data[0])*0.5)
         #axs[1, k].set_yscale('log')
-        axs[1, k].set_xlabel(f'center of gravity {lables[j]}', fontsize=plt_config.font_labelx)
+        unit = '[cells]' if j!=1 else '[layers]'
+        axs[1, k].set_xlabel(f'center of gravity {lables[j]} '+unit, fontsize=plt_config.font_labelx)
         axs[0, 0].set_ylabel('# showers', fontsize=plt_config.font_labely)
         axs[1, 0].set_ylabel('ratio to G4', fontsize=plt_config.font_ratio)
     if my_dir is not None:
@@ -883,8 +884,12 @@ def plt_xyz(xyz, xyz_list, shw, labels, my_dir=None, plt_config=plt_config, titl
     lables = ["X", "Y", "Z"] # local coordinate system  
     # plt.figure(figsize=(21, 9)) 
     fig, axs = plt.subplots(2, 3, figsize=(25, 10), sharex='col', height_ratios=[3, 1])
-
+        
     for k, j in enumerate([0, 2, 1]):
+        if j!=1:
+            xyz[j][xyz[1]<30] = xyz[j][xyz[1]<30] * 5 -450 # convert to mm
+            xyz[j][xyz[1]>=30] = xyz[j][xyz[1]>=30] * 30 -450  # convert to mm
+            
         # axs[0, k].set_xlim(plt_config.cog_ranges[j])
         if j==1: bbb = plt_config.bins_y
         else: bbb = plt_config.bins_xz
@@ -910,6 +915,10 @@ def plt_xyz(xyz, xyz_list, shw, labels, my_dir=None, plt_config=plt_config, titl
         # generated data
         data_gen_list, err_gen_list = [] , []
         for i, xyz_ in enumerate(xyz_list[j]):
+            if j!=1:
+                xyz_[xyz_list[1][0]<30] = xyz_[xyz_list[1][0]<30] * 5 -450 # convert to mm
+                xyz_[xyz_list[1][0]>=30] = xyz_[xyz_list[1][0]>=30] * 30 -450 # convert to mm
+                
             h_gen = axs[0, k].hist(
                 np.array(xyz_),
                 bins=h_data[1],
@@ -953,7 +962,7 @@ def plt_xyz(xyz, xyz_list, shw, labels, my_dir=None, plt_config=plt_config, titl
         axs[0, k].set_ylim([1e3, 4e7])
         
         if j==1: unit = '[layers]'
-        else: unit= '[bins]'
+        else: unit= '[mm]'
         axs[1, k].set_xlabel(f'{lables[j]} '+unit, fontsize=plt_config.font_labelx)
         axs[0, 0].set_ylabel('# showers', fontsize=plt_config.font_labely)
         axs[1, 0].set_ylabel('ratio to G4', fontsize=plt_config.font_ratio)
@@ -1302,16 +1311,16 @@ def pearson_plot(sim_list, gen_list, labels, names, my_dir=None):
     
     ff, map_color = 10, "BrBG"
     
-    fig = plt.figure(10, figsize=(22,6))
-    spec = gridspec.GridSpec(1, 3, width_ratios=[2.17, 1.82, 2], wspace=0.1)  
+    fig = plt.figure(10, figsize=(14,4))
+    spec = gridspec.GridSpec(1, 3, width_ratios=[2.17, 1.82, 2], wspace=0.01)  
     ax1 = fig.add_subplot(spec[0, 0])
     pearson_sim = np.ma.array(pearson_sim, mask=np.triu(np.ones(pearson_sim.shape), k=1)) # mask out the upper triangle
     im1 = ax1.imshow(pearson_sim, cmap=map_color, vmin= -1, vmax=1, alpha=0.8)
-    ax1.set_title(names[0], fontsize=ff)
+    ax1.set_title(names[0], fontsize=ff+2)
     ax1.set_xticks(range(len(labels)), labels, rotation=45, fontsize=ff)
     ax1.set_yticks(range(len(labels)), labels, rotation=45, fontsize=ff)
     
-    cbar = fig.colorbar(im1, ax=ax1, fraction= 0.042, pad=0.13, orientation='vertical', location='left') #pad=-0.01,
+    cbar = fig.colorbar(im1, ax=ax1, fraction= 0.042, pad=0.17, orientation='vertical', location='left') #pad=-0.01,
     ticklabs = cbar.ax.get_yticklabels()
     cbar.ax.set_yticklabels(ticklabs, fontsize=ff)
     # cbar.ax.yaxis.set_ticks_position('right')
@@ -1319,10 +1328,10 @@ def pearson_plot(sim_list, gen_list, labels, names, my_dir=None):
     ax2 = fig.add_subplot(spec[0, 1])
     pearson_gen = np.ma.array(pearson_gen, mask=np.triu(np.ones(pearson_gen.shape), k=1))
     im2 = ax2.imshow(pearson_gen, cmap=map_color, vmin= -1, vmax=1, alpha=0.8)
-    ax2.set_title(names[1], fontsize=ff)
-    ax2.set_xticks(range(len(labels)), labels, rotation=45, fontsize=ff)
-    ax2.set_yticks(range(len(labels)), labels, rotation=45, fontsize=ff)
-    
+    ax2.set_title(names[1], fontsize=ff+2)
+    ax2.set_xticks(range(len(labels)), labels, rotation=45, fontsize=ff+2)
+    ax2.set_yticks(range(len(labels)), labels, rotation=45, fontsize=ff+2)
+    ax2.get_yaxis().set_visible(False)
     for i in range(len(sim_list)):
         for j in range(len(sim_list)):
             if i >= j:
@@ -1330,21 +1339,21 @@ def pearson_plot(sim_list, gen_list, labels, names, my_dir=None):
                         ha="center", va="center", color="k", weight='bold', fontsize=ff-3)
                 ax2.text(j, i, np.round(pearson_gen[i,j],2),
                         ha="center", va="center", color="k", weight='bold', fontsize=ff-3)
-                
     
+    diff = pearson_sim - pearson_gen
     
-    diff = np.abs(pearson_sim - pearson_gen)
     ax4 = fig.add_subplot(spec[0, 2])
     diff = np.ma.array(diff, mask=np.triu(np.ones(diff.shape), k=1))
     im4 = ax4.imshow(diff, cmap="YlGn", alpha=0.8)
-    ax4.set_title(names[0]+' - '+names[1], fontsize=ff)
+    ax4.set_title(names[0]+' - '+names[1], fontsize=ff+2)
     ax4.set_xticks(range(len(labels)), labels, rotation=45, fontsize=ff)
     ax4.set_yticks(range(len(labels)), labels, rotation=45, fontsize=ff)
-    
+    ax4.get_yaxis().set_visible(False) 
     for i in range(len(sim_list)):
         for j in range(len(sim_list)):
-            ax4.text(j, i, np.round(pearson_sim[i,j] - pearson_gen[i,j],2),
-                    ha="center", va="center", color="k", weight='bold', fontsize=ff-3)
+            if i >= j:
+                ax4.text(j, i, np.round(pearson_sim[i,j] - pearson_gen[i,j],2),
+                        ha="center", va="center", color="k", weight='bold', fontsize=ff-3)
     
     cbar = fig.colorbar(im4, ax=ax4, fraction=0.042, orientation='vertical', location='right')
     ticklabs = cbar.ax.get_yticklabels()
