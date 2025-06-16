@@ -40,7 +40,7 @@ load_array_and_plot = True
 both_to_save = True
 fake_SHOWERS_TO_SAVE, real_SHOWERS_TO_SAVE =  False, True
 
-shw = 50002
+shw = 50000
 e_min, e_max = 10, 90 #49,51 #18, 22 #84,86 #13,17
 print('e_min:', e_min, 'e_max: ', e_max)
  
@@ -302,25 +302,18 @@ if compute_features:
         print('loading sim done')
          
     if (both_to_save) & (shw<15000):
-        # plotting_correlations(directory_2, events.astype(np.float16), events_r.astype(np.float16), axis=0)
-        # print('correlation plots done')
-        plotting_correlations_withCOGy(directory_2, events.astype(np.float16), events_r.astype(np.float16))
-        print('correlation cogy plots done')
-        plotting_correlations_withN(directory_2, events.astype(np.float16), events_r.astype(np.float16))
-        print('correlation n hits plots done')
+        directory_shw = directory_2+'3Dplots/'
+        os.makedirs(directory_shw, exist_ok=True)
+        i = int(shw/2) 
+        ev, ev_names, ev_title = [], [], []
+        for i in range(shw): #np.arange(i, i+20, 1): 
+            ev.append(events[i].astype(np.float16))
+            ev_names.append("3d_shower_fake_"+str(i))
+            ev_title.append("CaloHadronic")
+        # plt_3dShowers([events_r[i+1].astype(np.float16)], model_titles=["Geant4"], save_titles=["3d_shower_real"], my_dir=directory_shw)
+        plt_3dShowers([events_r[i].astype(np.float16)] + ev, model_titles=["Geant4"] + ev_title, save_titles=["3d_shower_real"] + ev_names, my_dir=directory_shw)
+        print('3d shower plot done') 
         sys.exit()
-        # directory_shw = directory_2+'3Dplots/'
-        # os.makedirs(directory_shw, exist_ok=True)
-        # i = int(shw/2) 
-        # ev, ev_names, ev_title = [], [], []
-        # for i in range(shw): #np.arange(i, i+20, 1): 
-        #     ev.append(events[i].astype(np.float16))
-        #     ev_names.append("3d_shower_fake_"+str(i))
-        #     ev_title.append("CaloHadronic")
-        # # plt_3dShowers([events_r[i+1].astype(np.float16)], model_titles=["Geant4"], save_titles=["3d_shower_real"], my_dir=directory_shw)
-        # plt_3dShowers([events_r[i].astype(np.float16)] + ev, model_titles=["Geant4"] + ev_title, save_titles=["3d_shower_real"] + ev_names, my_dir=directory_shw)
-        # print('3d shower plot done') 
-        # sys.exit()
 
     print('Getting features...')
 
@@ -412,16 +405,16 @@ if load_array_and_plot:
     plt.clf()
     my_model_label = "CaloHadronic"
     num_of_shw = len(real_dict["e_sum_list_r"])
-      
+    
+    """  
     plt_spinal(real_dict["e_layers_list_r"], [fake_dict["e_layers_list"]], num_of_shw, labels=['geant4', my_model_label], my_dir=directory_2)
-    print('done spinal')
+    print('done spinal') 
     plt_radial(real_dict["e_radial_r"], [fake_dict["e_radial"]], num_of_shw, labels=['geant4', my_model_label], my_dir=directory_2)
     print('done radial')
     fake_rad_mm = shower_for_radial_in_mm(fake_dict["e_radial_ecal"], fake_dict["e_radial_hcal"])
     real_rad_mm = shower_for_radial_in_mm(real_dict["e_radial_ecal_r"], real_dict["e_radial_hcal_r"])
     plt_radial_mm(real_rad_mm, [fake_rad_mm], num_of_shw, labels=['geant4', my_model_label], my_dir=directory_2)
     print('done radial mm')
-    sys.exit()
      
     cog_r = [real_dict['cog_x_r']-0.5, real_dict['cog_y_r'], real_dict['cog_z_r']-0.5]
     cog = [[fake_dict['cog_x']], [fake_dict['cog_y']], [fake_dict['cog_z']] ]
@@ -462,6 +455,23 @@ if load_array_and_plot:
                  my_dir=directory_2)
     print('done pearson') 
     
+    """
+    # plotting_correlations(directory_2, events.astype(np.float16), events_r.astype(np.float16), axis=0)
+    # print('correlation plots done')
+    plotting_correlations_withCOGy(directory_2, [fake_dict["e_sum_list"], fake_dict['cog_y']], 
+                                   [real_dict["e_sum_list_r"], real_dict['cog_y_r']],
+                                    inc_en = [real_dict['inc_en'].reshape(-1)*1000, fake_dict['inc_en'].reshape(-1)*1000],
+                                    labels=['$E_{sum}$', '$cog_{y}$'],
+                                    names=['Geant4', my_model_label])
+     
+    print('correlation cogy plots done')
+    """
+    plotting_correlations_withN(directory_2, [fake_dict["e_sum_list"], fake_dict["occ_list"]],
+                                [real_dict["e_sum_list_r"], real_dict["occ_list_r"]], 
+                                labels=['$E_{sum}$', '$N_{hits}$'], 
+                                names=['Geant4', my_model_label])
+    print('correlation n hits plots done')
+        
     os.makedirs(directory_2+'WD_tables/', exist_ok=True)
     dir3 = directory_2+'WD_tables/'
     print('     Table AAL...') 
@@ -476,3 +486,4 @@ if load_array_and_plot:
     print('\n   Table kl...') 
     for key, value in kl_dictionary.items(): 
         print(key, ':  ', value)
+    """ 
