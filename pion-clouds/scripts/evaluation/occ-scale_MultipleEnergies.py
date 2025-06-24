@@ -22,6 +22,8 @@ import random
 import pandas as pd
 from pathlib import Path
 from mpl_toolkits.axes_grid1 import make_axes_locatable
+from utils.plotting_features import compute_core90, error_sigma_over_mean  
+from scipy.optimize import curve_fit
 
 plt.close()
 mpl.rcParams['xtick.labelsize'] = 18   
@@ -71,37 +73,6 @@ for k, name in enumerate(f_names):
 
 title_list = ['ECAL', 'HCAL', '']
 col = ['#4daf4a', '#ff7f00', '#984ea3'] #colorblind colors
-
-def compute_core90(data):
-    """
-    Computes µ90 (mean) and σ90 (RMS) for the 90% core of each distribution.
-
-    Parameters:
-        distributions (dict): A dictionary where keys are energy levels and
-                              values are numpy arrays of distribution data.
-
-    Returns:
-        dict: A dictionary with energy as key and a tuple (mu90, sigma90) as value.
-    """
-    sorted_data = np.sort(data)
-    n = len(sorted_data)
-    lower_idx = int(n * 0.05)
-    upper_idx = int(n * 0.95)
-    core_90 = sorted_data[lower_idx:upper_idx]
-    return core_90
-
-def error_sigma_over_mean(x): 
-    
-    def sigma_error(x):
-        n = x.shape[0]
-        mean = np.mean(x)
-        sigma = np.std(x, ddof=1)
-        mu4 = np.sum((x-mean)**4 * (1/n)) # fourth moment
-        return 1/(2*sigma) * np.sqrt(1/n * (mu4 - (n-3)/(n-1) * sigma**4)  )
-     
-    sigma_err = sigma_error(x) 
-    mean_err = np.std(x, ddof=1)/ np.sqrt(x.shape[0]) 
-    return np.sqrt(sigma_err**2 / np.mean(x)**2 + mean_err**2 * sigma_err**2 / np.mean(x)**4)
     
     
 def plotting_energy_sum(my_dir):
@@ -367,14 +338,18 @@ def plotting_correlations(my_dir):
     
     axs0 = plt.subplot(gs[0])
     divider = make_axes_locatable(axs0)
-    cax1 = divider.append_axes("right", size="33%", pad=0.8)
-    cax2 = divider.append_axes("right", size="33%", pad=0.8)
-    cax3 = divider.append_axes("right", size="33%", pad=0.8)
+    cax1 = divider.append_axes("right", size="30%", pad=0.1)
+    cax2 = divider.append_axes("right", size="30%", pad=0.1)
+    cax3 = divider.append_axes("right", size="30%", pad=0.1)
     cbar1 = fig.colorbar(hist1[3], cax=cax1)
     cbar2 = fig.colorbar(hist2[3], cax=cax2)
     cbar3 = fig.colorbar(hist3[3], cax=cax3)
-    # cbar1.set_ticks([])
-    # cbar2.set_ticks([])
+    cbar2.set_ticks([])
+    cbar3.set_ticks([])
+    # cax1.tick_params(pad=1)
+    cax1.yaxis.set_ticks_position('left')
+    cax2.yaxis.set_ticks_position('left')
+    cax3.yaxis.set_ticks_position('left')
     axs0.set_axis_off()
     
     axs2 = plt.subplot(gs[2])
@@ -400,7 +375,7 @@ def plotting_correlations(my_dir):
 
     thr_ecal = 38 # range= [0,1900] - bins=50: 1900/50 = 38
     range_ = [0, 2000]
-    bbins= 50
+    bbins= 70
     axs3.hist(real_dict_15[to_plot_r[0]][real_dict_15[to_plot_r[1]]< thr_ecal], 
               bins=bbins, range=range_, color='green', alpha=0.2) #, density=True)
     axs3.hist(fake_dict_15[to_plot[0]][fake_dict_15[to_plot[1]]< thr_ecal], 
@@ -416,22 +391,105 @@ def plotting_correlations(my_dir):
     axs3.hist(fake_dict_85[to_plot[0]][fake_dict_85[to_plot[1]]< thr_ecal], 
               bins=bbins, range=range_, color='purple', label='85 GeV', histtype='step', linewidth=4) #, density=True) 
     
-    # p.legend(fontsize=font)
+    # p.legend(fontsize=font) 
     axs3.set_title(f"Visible energy ECal < {thr_ecal:.0f} [MeV]", fontsize=font) 
     axs3.set_xlabel("Visible energy HCal [MeV]", fontsize=font) 
     axs3.set_ylabel("Counts", fontsize=font) 
-    plt.legend()
+    
+    axs3.hist([0,0], bins=1, label='geant4', color='gray', alpha=0.2)
+    axs3.hist([0,0], bins=1, label='CaloHadronic', histtype='step', color='gray')  
+    h, l = axs3.get_legend_handles_labels()    
+    axs3.legend([h[0],h[1],h[2]],[l[0],l[1],l[2]], loc=1)
+    axs33 = axs3.twinx()
+    axs33.legend([h[3],h[4]],[l[3],l[4]], loc=2)
+    axs33.set_axis_off()
+    
     plt.tight_layout()   
     plt.savefig(f"{my_dir}/Corr_multiEn.pdf")
     plt.close()   
 
+def fit_resolution(my_dir):
+    
+    def resolution_model(p, a, b, c):
+        return a + b / np.sqrt(p) + c / p
+
+    inc_en = [15, 50, 85]
+    fig = plt.figure(9, figsize=(9, 6))
+    ax = fig.add_subplot(111)
+    p_fit = np.linspace(min(inc_en), max(inc_en), 100)
+    
+    for j in range(2):
+        resolutions = []
+        res_errors = []
+
+        for p in range(3):
+            if j ==0:
+                label, color, linestyle = 'Geant4', 'k', '-'
+                if p==0: energies = compute_core90(real_dict_15["e_sum_list_r"])
+                elif p==1: energies = compute_core90(real_dict_50["e_sum_list_r"])
+                else: energies = compute_core90(real_dict_85["e_sum_list_r"])
+            else: 
+                label, color, linestyle = 'CaloHadronic', 'orange', '--'
+                if p==0: energies = compute_core90(fake_dict_15["e_sum_list"])
+                elif p==1: energies = compute_core90(fake_dict_50["e_sum_list"])
+                else: energies = compute_core90(fake_dict_85["e_sum_list"])
+            
+            mean_E = np.mean(energies)
+            std_E = np.std(energies)
+            res = std_E / mean_E
+            resolutions.append(res)
+            res_errors.append(error_sigma_over_mean(energies))
+
+        resolutions = np.array(resolutions)
+        res_errors = np.array(res_errors)
+
+        # Fit the resolution curve
+        popt, pcov = curve_fit(resolution_model, inc_en, resolutions, sigma=res_errors, absolute_sigma=True)
+        a_fit, b_fit, c_fit = popt
+        ua, ub, uc = np.sqrt(np.diag(pcov))          # 1 σ errors
+        corr = pcov / np.outer(np.sqrt(np.diag(pcov)), np.sqrt(np.diag(pcov)))
+        
+        # After the fit:
+        residuals = resolutions - resolution_model(inc_en, *popt)
+        print(residuals, res_errors)
+        chi_squared = np.sum((residuals / res_errors) ** 2)
+        ndf = len(resolutions) - len(popt)
+        
+        ax.errorbar(inc_en, resolutions, yerr=res_errors, fmt='o', label=label, color=color)
+        ax.plot(p_fit, resolution_model(p_fit, *popt), color=color, linestyle=linestyle,
+                label=f'Fit: \n a = {a_fit:.2f} $\pm$ {ua:.2f}\n b = {b_fit:.1f} $\pm$ {ub:.1f}\n c = {c_fit:.1f} $\pm$ {uc:.1f}')
+        ax.plot([0,0], [-10,-10], color=color, linestyle=linestyle,
+                label=f"χ² / ndf = {chi_squared:.2f} / {ndf} = {chi_squared/ndf:.2f}")
+         
+    plt.xlabel('Incident Energy $E_{0}$ (GeV)')
+    plt.ylabel('Energy Resolution ($\sigma_{90}$ / $\mu_{90}$)')
+    plt.title('$\sigma_{90} / \mu_{90} = a + b / \sqrt{E_{0}} + c / E_{0}$', fontsize=font-3)
+    plt.ylim([0,0.3])
+    
+    h, l = ax.get_legend_handles_labels() 
+    # print(l)   
+    ax.legend([h[0],h[2]],[l[0],l[2]], ncols=2, loc=2, fontsize=font-5)
+    ax2 = ax.twinx()
+    ax2.legend([h[1],h[3]],[l[1],l[3]], ncols=2, loc=5, fontsize=font-5)
+    ax2.set_axis_off()
+    ax3 = ax.twinx()
+    ax3.legend([h[4],h[5]],[l[4],l[5]], ncols=2, loc=3)
+    ax3.set_axis_off() 
+    
+    plt.grid(True)
+    plt.tight_layout()  
+    plt.savefig(my_dir+'/FitRes_'+str(shw)+ '_showers.pdf', dpi=100, bbox_inches='tight')
+    plt.close()
+
+    
 b=29
 bins_y = 78
 plt.clf()
+
 directory = '/data/dust/user/mmozzani/pion-clouds/figs/occ-scale/'+name_folder+'/'
 os.makedirs(directory+'Features_Comparison/', exist_ok=True)
 directory_2 = directory+'Features_Comparison/'
-"""
+
 print('    Resolution and Linearity ALL... ')
 plotting_energy_resolution_linearity_all(my_dir = directory_2)
 plt.clf()
@@ -447,8 +505,12 @@ plt.clf()
 print('     Hits... ')
 plotting_hits(my_dir = directory_2)
 plt.clf()
-"""
+
 print('     Corr... ')
 plotting_correlations(my_dir = directory_2)
 plt.clf()
 
+
+# print('     Fitting... ')
+# fit_resolution(my_dir = directory_2)
+# plt.clf()

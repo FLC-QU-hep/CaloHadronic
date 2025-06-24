@@ -8,6 +8,9 @@ from scipy.stats import wasserstein_distance
 from utils.dataset import PionClouds as pc
 import time 
 
+def get_cog(x,y,z,e):
+    return np.sum((x * e), axis=1) / e.sum(axis=1), np.sum((y * e), axis=1) / e.sum(axis=1), np.sum((z * e), axis=1) / e.sum(axis=1)
+
 def get_only_hcal_data(events):
     # use only hcal and ecal part as conditioning
     dim_a, dim_b, dim_c = events.shape
@@ -34,6 +37,20 @@ def get_only_hcal_data(events):
         padding_mask_hcal[j, idx_mask] = True   
     del events2 
     return events, cond_ecal, padding_mask_hcal, padding_mask_ecal 
+    
+def get_scale_factor(num_clusters, coef_real, coef_fake, n_splines):  # num_clusters: (bs, 1)
+    
+    if n_splines is not None:
+        spline_real = n_splines['spline_real']
+        spline_fake = n_splines['spline_fake']
+        scale_factor = spline_fake.predict(spline_real.predict(num_clusters).reshape(-1,1)) .reshape(-1,1) / num_clusters
+    else:
+        poly_fn_real = np.poly1d(coef_real)
+        poly_fn_fake = np.poly1d(coef_fake) 
+        scale_factor = poly_fn_fake(poly_fn_real(num_clusters)) / num_clusters
+
+    scale_factor = np.clip(scale_factor, 0., None)  # cannot be negative
+    return scale_factor  # (bs, 1)
 
 def plot_not_proj(real_showers, fake_showers, cond_E_real, cond_E_fake, only_hcal=False, only_ecal=False, name='', sf=None):
     name0 = name.split('_')[0]
@@ -311,21 +328,87 @@ def _calculate_points_per_layer(events, axis=1, bins=78, only_hcal=False, only_e
         points_per_layer.append(num_p)
     return np.array(points_per_layer)
 
-def get_shower(model, num_points, energy, cond_Nperlayer=None, theta=0, phi=0, bs=1, cond_N=None, pm=None, cond_ecal = None, config=None, clock_dict=None):
-    
-    e = torch.ones((bs, 1), device=config.device) * energy
-    p = torch.Tensor(cond_Nperlayer).to(config.device)
+def _calculate_energy_per_layer(events, bins=78, only_hcal=False, only_ecal=False):
+    energy_per_layer  = []
+    for event in events:
+        en_p, _ = np.histogram(event[:, 1][event[:, 3] > 0], bins=bins, range=(0, bins), weights=event[:, 3][event[:, 3] > 0]) 
+        if only_hcal: en_p = en_p[30:]
+        if only_ecal: en_p = en_p[:30] 
+        energy_per_layer.append(en_p)
+        
+    return np.array(energy_per_layer)
 
+def get_shift(theta, phi, l: int):
+        
+        EIR = 1804.7
+        layer_bottom_pos = np.array([   1811.34020996, 1814.46508789, 1823.81005859, 1826.93505859,
+                                                 1836.2800293 , 1839.4050293 , 1848.75      , 1851.875     ,
+                                                 1861.2199707 , 1864.3449707 , 1873.68994141, 1876.81494141,
+                                                 1886.16003418, 1889.28503418, 1898.63000488, 1901.75500488,
+                                                 1911.09997559, 1914.22497559, 1923.56994629, 1926.69494629,
+                                                 1938.14001465, 1943.36499023, 1954.81005859, 1960.03503418,
+                                                 1971.47998047, 1976.70495605, 1988.15002441, 1993.375     ,
+                                                 2004.81994629, 2010.04504395])
+        layer_bottom_pos = layer_bottom_pos - EIR
+        cell_thickness = 0.5250244140625 # in mm
+        z_positions = layer_bottom_pos+cell_thickness/2
+        dist_to_layers = layer_bottom_pos + cell_thickness/2
+        
+        theta = np.array(theta, dtype=np.float32)
+        phi = np.array(phi, dtype=np.float32)
+        
+        theta = theta/180. * np.pi  # theta in radians
+        phi = phi/180. * np.pi  # phi in radians
+        
+        r = dist_to_layers[l] / np.cos(theta)
+        x_shift = r * np.sin(theta) * np.cos(phi)
+        y_shift = r * np.sin(theta) * np.sin(phi)
+        
+        return x_shift, y_shift
+
+
+def get_shower(model, num_points, energy, cond_Nperlayer=None, theta=0, phi=0, bs=1, cond_N=None, kdiffusion=False, pm=None, cond_ecal = None, config=None, clock_dict=None):
+    direction = get_direction(theta, phi)
+    e = torch.ones((bs, 1), device=config.device) * energy
+    if cond_Nperlayer is not None:
+        p = torch.Tensor(cond_Nperlayer).to(config.device)
+        p1 = torch.Tensor(cond_N).to(config.device)
+    else:
+        p = torch.ones((bs, 3), device=config.device) * torch.tensor(direction, device=config.device) 
+        p = p.float()
+    
     padding_mask , cond_ecal_feats = None, None 
     if pm is not None: padding_mask = torch.Tensor(pm).to(config.device)
     if cond_ecal is not None: cond_ecal_feats = torch.Tensor(cond_ecal).to(config.device)
     
-    cond_feats = torch.cat([e, p], -1)
+    if cond_Nperlayer is not None: 
+        # cond_feats = torch.cat([e, p1, p], -1)
+        cond_feats = torch.cat([e, p], -1)
+    else: cond_feats = torch.cat([e, p], -1)
     
     with torch.no_grad():
-        padding_mask = None # the padding mask is not needed when sampling from the diffusion model 
-        fake_shower = model.sample(cond_feats, num_points, config, padding=padding_mask, cond_ecal=cond_ecal_feats)
+        if kdiffusion:
+            padding_mask = None # the padding mask is not needed when sampling from the diffusion model
+            if clock_dict is not None:
+                clock_dict["sample timer"].start()
+                fake_shower = model.sample(cond_feats, num_points, config, padding=padding_mask, cond_ecal=cond_ecal_feats)
+                clock_dict["sample timer"].end() 
+                clock_dict["sample t"].append(clock_dict["sample timer"].get_elasped_time())
+            else: 
+                fake_shower = model.sample(cond_feats, num_points, config, padding=padding_mask, cond_ecal=cond_ecal_feats)
+        else:
+            fake_shower = model.sample(cond_feats, num_points, config.flexibility)
+    
     return fake_shower
+
+
+def get_direction(theta, phi):    
+    theta = theta/180. * np.pi  # theta in radians
+    phi = phi/180. * np.pi  # phi in radians
+    px = np.cos( phi ) * np.sin( theta ) 
+    py = np.sin( phi ) * np.sin( theta )
+    pz = np.cos( theta ) 
+    return np.array([px, py, pz])
 
 def x_z_shift(showers, Xmin, Xmax, Zmin, Zmax):
     showers = np.moveaxis(showers, -1, -2)   # (bs, num_points, 4) -> (bs, 4, num_points)
@@ -336,6 +419,42 @@ def x_z_shift(showers, Xmin, Xmax, Zmin, Zmax):
     showers[:, 2, :] = showers[:, 2, :] * (Zmax - Zmin) + Zmin
     return showers
     
+def sample_points_in_angle_range(num_points, theta_range=(0, 180), phi_range=(-180, 180)):
+    
+    scale = 5
+    
+    # Generate random points in a unit cube
+    points = np.random.randn(3, int(num_points*scale))
+
+    # Normalize the points to lie on the surface of the unit sphere
+    points /= np.linalg.norm(points, axis=0)[None, :]
+    
+    theta_range = np.array(theta_range)/180 * np.pi
+    phi_range = np.array(phi_range)/180 * np.pi
+    
+
+    # Convert Cartesian coordinates to spherical coordinates
+    phi = np.arctan2(points[1, :], points[0, :])
+    theta = np.arccos(points[2, :])
+
+    # Filter points based on theta and phi ranges
+    mask = np.logical_and.reduce((
+        theta >= theta_range[0],
+        theta <= theta_range[1],
+        phi >= phi_range[0],
+        phi <= phi_range[1]
+    ))
+        
+    points = points[:, mask]
+        
+    phi = np.arctan2(points[1, :], points[0, :])
+    theta = np.arccos(points[2, :])
+    
+    theta = theta/np.pi * 180
+    phi = phi/np.pi * 180
+
+    return points[:, :num_points], theta[:num_points], phi[:num_points]
+
 def plot_SF(points_per_layer, clusters_per_layer, name='', outpath=''):
     _rangeECAL = (np.nanmin([points_per_layer[:, :30].flatten(), clusters_per_layer[:, :30].flatten()]), 
                   np.nanmax([points_per_layer[:, :30].flatten(), clusters_per_layer[:, :30].flatten()])
@@ -383,7 +502,21 @@ def plot_SF(points_per_layer, clusters_per_layer, name='', outpath=''):
     with open(outpath+name+'.txt', 'w') as file:
         file.write('Wasserstein distance tot: '+str(np.mean(wdist_tot))+ ' +- '+str(np.std(wdist_tot))+'\n')
         file.write('Wasserstein distance per layer: '+str(np.mean(wdist_per_layer_list))+ ' +- '+str(np.std(wdist_per_layer_list))+'\n')
-      
+    
+def plot_en_sum(real_showers, fake_showers, name=''):
+    plt.figure(7)
+    b=60
+    _range=(np.nanmin(fake_showers[:,3,:].sum(axis=1)), np.nanmax(fake_showers[:,3,:].sum(axis=1)))
+    plt.hist(real_showers[:,3,:].sum(axis=1).flatten(), bins = b, range = _range, alpha=0.5, label='sim', color='grey')
+    plt.hist(fake_showers[:,3,:].sum(axis=1).flatten() , bins= b, range = _range, linewidth=4, histtype='step', label='gen', color='green')
+    plt.xlabel('energy sum')
+    plt.yscale('log')
+    plt.ylabel('counts')
+    plt.legend()
+    plt.grid()
+    plt.savefig('prova_en_sum_'+name+'.png')
+    plt.close()
+    
 def gen_showers_batch(model, shower_flow, e_min, e_max, theta=0, phi=0, num=2000, bs=8, kdiffusion=False, 
                       config=None, max_points=5131, enable_shower_flow=True, cond_E=None, cond_ECAL=None,
                       single_SF=None, coef_real=None, coef_fake=None, n_scaling = False, n_splines=None,
@@ -393,7 +526,9 @@ def gen_showers_batch(model, shower_flow, e_min, e_max, theta=0, phi=0, num=2000
     Xmax, Xmin, Zmax, Zmin, Ymin, Ymax = 450, -450, 450, -450, 0 ,78 
     if config.only_hcal: Ymin = 30 
     elif config.only_ecal: Ymax = 30 
-
+    
+    if clock_dict is None: clock_dict_ = None
+    
     if real_showers is None: 
         f = h5py.File(config.data.dataset_path.format(30), 'r')
         events = np.array(f["events"][:])
@@ -411,13 +546,17 @@ def gen_showers_batch(model, shower_flow, e_min, e_max, theta=0, phi=0, num=2000
         real_showers = real_showers[:, :, -max_len:]
         real_showers[:, 3, :] *= 1000   
         
-    if config.only_hcal: 
-        samples = _calculate_points_per_layer(np.moveaxis(real_showers,-1,-2)) 
-        real_showers = np.moveaxis(real_showers, -1, -2)
-        real_showers[real_showers[:, :, 3] == 0] = 0 
-        real_showers2, tot_cond_ecal, _, _ = get_only_hcal_data(real_showers) 
-        real_showers2 = np.moveaxis(real_showers2, -1, -2)   
-        cond_E = cond_E_real / 100 * 2 -1 
+    if config.only_hcal:
+        if gen_both_EandHcal==False: 
+            samples = _calculate_points_per_layer(np.moveaxis(real_showers,-1,-2)) 
+            real_showers = np.moveaxis(real_showers, -1, -2)
+            real_showers[real_showers[:, :, 3] == 0] = 0 
+            real_showers2, tot_cond_ecal, _, _ = get_only_hcal_data(real_showers) 
+            real_showers2 = np.moveaxis(real_showers2, -1, -2)   
+            cond_E = cond_E_real / 100 * 2 -1 
+        else:
+            tot_cond_ecal = np.moveaxis(cond_ECAL, -1, -2)
+            cond_E = torch.Tensor(cond_E) 
         tot_cond_ecal[:, :, 0] = (tot_cond_ecal[:, :, 0] - Xmin) * 2 / (Xmax - Xmin) - 1  # x normalization
         tot_cond_ecal[:, :, 2] = (tot_cond_ecal[:, :, 2] - Zmin) * 2 / (Zmax - Zmin) - 1  # z normalization  
          
@@ -434,7 +573,9 @@ def gen_showers_batch(model, shower_flow, e_min, e_max, theta=0, phi=0, num=2000
         tot_padding_mask = tot_padding_mask_ecal
         e = cond_E_real.detach().cpu().numpy()
                            
-    if config.only_ecal:
+    if (enable_shower_flow) and (config.only_ecal):
+        if clock_dict is not None: clock_dict_sf, clock_dict_ = clock_dict
+        
         cond_E = cond_E.to(config.device)
         # the incident energy for the SF is initialized just diving for the max
         en_max_sf = 90.1395492553711
@@ -444,11 +585,18 @@ def gen_showers_batch(model, shower_flow, e_min, e_max, theta=0, phi=0, num=2000
         if (single_SF is not None and config.only_ecal) | (single_SF is None): 
             # samples = shower_flow.condition(context).sample(torch.Size([num, ])).cpu().numpy() # 126.7 max energy label in the dataset
             
-            with torch.no_grad():
-                samples = shower_flow.sample((context.shape[0], 78), condition=context).cpu().numpy()
+            if clock_dict is not None:
+                clock_dict_sf["sample timer"].start()
+                with torch.no_grad():
+                    samples = shower_flow.sample((context.shape[0], 78), condition=context).cpu().numpy()
+                clock_dict_sf["sample timer"].end()
+            else: 
+                with torch.no_grad():
+                    samples = shower_flow.sample((context.shape[0], 78), condition=context).cpu().numpy()
             
             samples = np.exp(samples * p_per_l_max).astype(int) 
-            
+            # samples = np.clip(samples, a_min=0, a_max=602) #602 is max number of points per layer
+
             # this is a control on the number of points per layer, and the total number of points
             p=0
             while (len(np.where(samples.sum(axis=1)>5001)[0])>0) | (len(np.where(samples>602)[0])>0):
@@ -457,12 +605,18 @@ def gen_showers_batch(model, shower_flow, e_min, e_max, theta=0, phi=0, num=2000
                     with torch.no_grad():
                         samples[i] = shower_flow.sample((1, 78), condition=context[i].reshape(1,1)).cpu().numpy()
                         samples[i] = np.exp(samples[i] * p_per_l_max).astype(int)
+                        # samples[i] = np.clip(samples[i], a_min=0, a_max=602)  
                     p+=1
                     if p>10: break
             samples = samples.astype(int)        
         else: samples = single_SF[:,:78].copy() 
     else:
-        samples = single_SF.copy() 
+        clock_dict_ = clock_dict
+        
+        if enable_shower_flow==False:
+            cond_E = cond_E.reshape(num,1)
+        if config.only_hcal: 
+            if gen_both_EandHcal: samples = single_SF.copy() 
 
     mmaxx = samples.sum(axis=1).max()
     if config.only_hcal: hits_per_layer_all_tot = samples[:, 30:]
@@ -495,6 +649,8 @@ def gen_showers_batch(model, shower_flow, e_min, e_max, theta=0, phi=0, num=2000
         if (num - evt_id) < bs: 
             bs = num - evt_id 
             
+        if clock_dict is not None: clock_dict_["sample timer"].reset()
+        
         cond_E_batch = cond_E[evt_id : evt_id+bs]    
         hits_per_layer_all = hits_per_layer_all_tot[evt_id : evt_id+bs]     
         num_clusters = np.sum(hits_per_layer_all, axis=1).reshape(bs, 1) #B,1 
@@ -507,10 +663,11 @@ def gen_showers_batch(model, shower_flow, e_min, e_max, theta=0, phi=0, num=2000
         padding_mask[col_indices >= np.array(num_clusters.reshape(-1))[:, None]] = True 
         cond_Nperlayer = torch.Tensor(hits_per_layer_all/ hits_per_layer_all.max()).to(config.device)  
         
-        if config.only_hcal: 
+        if config.only_hcal: #& (single_SF is not None):
             cond_ecal = tot_cond_ecal[evt_id : evt_id+bs]  
             cond_ecal_temp = tot_cond_ecal[evt_id : evt_id+bs]  
-            # preprocessing ecal data  
+            # preprocessing ecal data 
+            # cond_ecal[cond_ecal[:, :, 3] == 0] = 0 
             _, cond_ecal, _, padding_mask_ecal = get_only_hcal_data(cond_ecal)
             cond_ecal_tosave = cond_ecal.copy()
             smearing = np.random.uniform(-0.49, 0.49, size=cond_ecal[:, :, 1].shape)
@@ -522,7 +679,7 @@ def gen_showers_batch(model, shower_flow, e_min, e_max, theta=0, phi=0, num=2000
         
         #generationnnnnnn 
         fs = get_shower(model, max_num_clusters, cond_E_batch, cond_N = cond_N, cond_Nperlayer = cond_Nperlayer, cond_ecal = cond_ecal, 
-                            theta=0, bs=bs, pm = padding_mask, config=config, clock_dict=clock_dict_)
+                            theta=0, bs=bs, kdiffusion=kdiffusion, pm = padding_mask, config=config, clock_dict=clock_dict_)
         
         if config.data.log_energy: 
             fs[:, :, 3] *= config.data.log_var
@@ -589,7 +746,12 @@ def gen_showers_batch(model, shower_flow, e_min, e_max, theta=0, phi=0, num=2000
                 z_flow = z_flow[:fs[i, :, :].shape[0]]
             else:  
                 for f in range(4): fs[i, :, f][z_flow == 0] = 0
-            fs[fs[:, :, 3]  <= 0] = 0    # setting events with negative energy to zero          
+            fs[fs[:, :, 3]  <= 0] = 0    # setting events with negative energy to zero    
+   
+            # fs3=fs.copy()
+            # fs3[:,:,1] = np.clip(fs3[:,:,1] - 0.5, 0, 30)
+            # plot_not_proj(real_showers, np.moveaxis(fs3,-1, -2), e, e, name= 'layerPPSF2_HCAL_EO_', only_hcal=config.only_hcal)
+            # # sys.exit()       
                   
         length = max_shower_length - fs.shape[1] 
         if length < 0:
@@ -618,20 +780,32 @@ def gen_showers_batch(model, shower_flow, e_min, e_max, theta=0, phi=0, num=2000
     fake_showers2[:,1,:] = fake_showers2[:,1,:].astype(int)
     
     flag=False 
-       
-    cond_E_fake = cond_E.detach().cpu().numpy()
-    
-    if config.only_hcal: nn='H'
-    elif config.only_ecal: 
-        nn='E'
-        cond_E_real = cond_E_real.detach().cpu().numpy() 
-                    
-    plot_not_proj(real_showers, fake_showers2, cond_E_real, cond_E_fake, name='_'+nn, only_hcal=flag, only_ecal=config.only_ecal, sf = hits_per_layer_all_tot)  
-    plotting_pionclouds(real_showers, fake_showers2, name='_'+nn, only_hcal=flag, only_ecal=config.only_ecal)
-    
-    if config.only_hcal:
-        plot_not_proj(real_showers, fake_showers, cond_E_real, cond_E_fake, name='layerPP_'+nn, only_hcal=flag, only_ecal=config.only_ecal, sf = hits_per_layer_all_tot)
-        plotting_pionclouds(real_showers, fake_showers, name= 'layerPP_'+nn, only_hcal=flag, only_ecal=config.only_ecal)     
+    # fake_showers[:,1,:] = np.clip(fake_showers[:,1,:] - 0.5, 0, Ymax) #to remove
+    if clock_dict is not None:
+        if config.only_hcal: clock_dict = clock_dict_
+        else: clock_dict = [clock_dict_sf , clock_dict_]
+        return fake_showers, samples, cond_E.detach().cpu().numpy().astype('float32'), real_showers, cond_E_real, clock_dict
+    else:
+        
+        cond_E_fake = cond_E.detach().cpu().numpy()
+        if enable_shower_flow==False: 
+            cond_E_real = cond_E_fake 
+            hits_per_layer_all_tot2, hits_per_layer_all_tot = None, None
+        
+        if config.only_hcal: nn='H'
+        elif config.only_ecal: 
+            nn='E'
+            cond_E_real = cond_E_real.detach().cpu().numpy() 
+        if enable_shower_flow==False: 
+            nn = nn+'_noSF' 
+            real_showers = np.moveaxis(real_showers, -1, -2)
+                        
+        plot_not_proj(real_showers, fake_showers2, cond_E_real, cond_E_fake, name='_'+nn, only_hcal=flag, only_ecal=config.only_ecal, sf = hits_per_layer_all_tot)  
+        plotting_pionclouds(real_showers, fake_showers2, name='_'+nn, only_hcal=flag, only_ecal=config.only_ecal)
+        
+        if config.only_hcal:
+            plot_not_proj(real_showers, fake_showers, cond_E_real, cond_E_fake, name='layerPP_'+nn, only_hcal=flag, only_ecal=config.only_ecal, sf = hits_per_layer_all_tot)
+            if enable_shower_flow: plotting_pionclouds(real_showers, fake_showers, name= 'layerPP_'+nn, only_hcal=flag, only_ecal=config.only_ecal)     
 
-    return fake_showers, samples, cond_E.detach().cpu().numpy().astype('float32'), real_showers, cond_E_real  
+        return fake_showers, samples, cond_E.detach().cpu().numpy().astype('float32'), real_showers, cond_E_real  # (bs, 4, num_points), (bs, 1) 
 

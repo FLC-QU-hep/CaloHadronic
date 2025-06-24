@@ -409,6 +409,7 @@ if load_array_and_plot:
     """  
     plt_spinal(real_dict["e_layers_list_r"], [fake_dict["e_layers_list"]], num_of_shw, labels=['geant4', my_model_label], my_dir=directory_2)
     print('done spinal') 
+    
     plt_radial(real_dict["e_radial_r"], [fake_dict["e_radial"]], num_of_shw, labels=['geant4', my_model_label], my_dir=directory_2)
     print('done radial')
     fake_rad_mm = shower_for_radial_in_mm(fake_dict["e_radial_ecal"], fake_dict["e_radial_hcal"])
@@ -425,7 +426,7 @@ if load_array_and_plot:
     xyz = [[fake_dict['X']], [fake_dict['Y']], [fake_dict['Z']] ] 
     plt_xyz(xyz_r, xyz, num_of_shw, labels=['geant4', my_model_label], my_dir=directory_2)
     print('xyz done')
-    
+     
     plt_hit_e(real_dict["hits_list_r"], [fake_dict["hits_list"]], num_of_shw, labels=['geant4', my_model_label], my_dir=directory_2, plt_config=plt_config, title=plt_config.title)
     print('done vis energy')
     plt_sum_e(real_dict["e_sum_list_r"], [fake_dict["e_sum_list"]], num_of_shw, labels=['geant4', my_model_label], my_dir=directory_2, plt_config=plt_config, title=plt_config.title)
@@ -455,7 +456,6 @@ if load_array_and_plot:
                  my_dir=directory_2)
     print('done pearson') 
     
-    """
     # plotting_correlations(directory_2, events.astype(np.float16), events_r.astype(np.float16), axis=0)
     # print('correlation plots done')
     plotting_correlations_withCOGy(directory_2, [fake_dict["e_sum_list"], fake_dict['cog_y']], 
@@ -463,9 +463,8 @@ if load_array_and_plot:
                                     inc_en = [real_dict['inc_en'].reshape(-1)*1000, fake_dict['inc_en'].reshape(-1)*1000],
                                     labels=['$E_{sum}$', '$cog_{y}$'],
                                     names=['Geant4', my_model_label])
-     
     print('correlation cogy plots done')
-    """
+    
     plotting_correlations_withN(directory_2, [fake_dict["e_sum_list"], fake_dict["occ_list"]],
                                 [real_dict["e_sum_list_r"], real_dict["occ_list_r"]], 
                                 labels=['$E_{sum}$', '$N_{hits}$'], 
@@ -487,3 +486,9 @@ if load_array_and_plot:
     for key, value in kl_dictionary.items(): 
         print(key, ':  ', value)
     """ 
+    
+    fit_resolution(directory_2, 
+                   real_dict["e_sum_list_r"], 
+                   fake_dict["e_sum_list"], 
+                   real_dict['inc_en'].reshape(-1), 
+                   fake_dict['inc_en'].reshape(-1))
