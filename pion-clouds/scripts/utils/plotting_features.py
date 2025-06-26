@@ -20,6 +20,7 @@ from scipy.stats import wasserstein_distance
 import pandas as pd
 import json
 import sys
+from scipy.optimize import curve_fit
 
 mpl.rcParams['xtick.labelsize'] = 18    
 mpl.rcParams['ytick.labelsize'] = 18
@@ -125,6 +126,39 @@ class Configs():
         self.radial_edges = [0, 6.558, 9.849, 12.96, 17.028, 23.434, 33.609, 40.119, 48.491, 68.808, 300]
 
 plt_config = Configs() 
+
+
+def compute_core90(data):
+    """
+    Computes µ90 (mean) and σ90 (RMS) for the 90% core of each distribution.
+
+    Parameters:
+        distributions (dict): A dictionary where keys are energy levels and
+                              values are numpy arrays of distribution data.
+
+    Returns:
+        dict: A dictionary with energy as key and a tuple (mu90, sigma90) as value.
+    """
+    sorted_data = np.sort(data)
+    n = len(sorted_data)
+    lower_idx = int(n * 0.05)
+    upper_idx = int(n * 0.95)
+    core_90 = sorted_data[lower_idx:upper_idx]
+    return core_90
+
+def error_sigma_over_mean(x): 
+    
+    def sigma_error(x):
+        n = x.shape[0]
+        mean = np.mean(x)
+        sigma = np.std(x, ddof=1)
+        mu4 = np.sum((x-mean)**4 * (1/n)) # fourth moment
+        return 1/(2*sigma) * np.sqrt(1/n * (mu4 - (n-3)/(n-1) * sigma**4)  )
+     
+    sigma_err = sigma_error(x) 
+    mean_err = np.std(x, ddof=1)/ np.sqrt(x.shape[0]) 
+    return np.sqrt(sigma_err**2 / np.mean(x)**2 + mean_err**2 * sigma_err**2 / np.mean(x)**4)
+
 
 def ratio_plots(axs, geant4_data, gen_data_list, err_data, err_gen_list, bins, pos, plt_config=plt_config):
     # ratio plot on the bottom
@@ -964,7 +998,7 @@ def plt_xyz(xyz, xyz_list, shw, labels, my_dir=None, plt_config=plt_config, titl
         if j==1: unit = '[layers]'
         else: unit= '[mm]'
         axs[1, k].set_xlabel(f'{lables[j]} '+unit, fontsize=plt_config.font_labelx)
-        axs[0, 0].set_ylabel('# showers', fontsize=plt_config.font_labely)
+        axs[0, 0].set_ylabel('# hits', fontsize=plt_config.font_labely)
         axs[1, 0].set_ylabel('ratio to G4', fontsize=plt_config.font_ratio)
         
     if my_dir is not None:
@@ -1025,10 +1059,10 @@ def wd_table(real_dict, fake_dict, shw, threshold, my_dir, ecal=False, hcal=Fals
     my_dict={'COG x' : [],'COG y' : [],'COG z' : [], 'Shower Start Layer': [], 'Visible Cell Energy': [], 
             'Energy Sum' : [], 'N. Hits': [], 'Radial Energy': [], 'Energy along y': []}
     wd_dictionary = {}
-        
+                 
     if ecal: pp,l = '_ecal', 30
     elif hcal: pp,l = '_hcal', 48
-    else: pp,l = '', 78
+    else: pp,l = '', 78 
     wd_mean_cog_x, wd_std_cog_x = calc_wdist_1d(real_dict["cog_x_r"+pp][1:]-0.5, fake_dict["cog_x"+pp], tot_shw = shw)
     wd_mean_cog_y, wd_std_cog_y = calc_wdist_1d(real_dict["cog_y_r"+pp][1:], fake_dict["cog_y"+pp], tot_shw = shw)
     wd_mean_cog_z, wd_std_cog_z = calc_wdist_1d(real_dict["cog_z_r"+pp][1:]-0.5, fake_dict["cog_z"+pp], tot_shw = shw)
@@ -1237,7 +1271,77 @@ def kl_table(real_dict, fake_dict, shw, threshold, my_dir, ecal=False, hcal=Fals
         file.write(json.dumps(kl_dictionary))
     
     return kl_dictionary
-       
+
+def fit_resolution(my_dir, en_real, en_fake, E0_real, E0_fake):
+    
+    def resolution_model(p, a, b, c):
+        return a + b / np.sqrt(p) + c / p
+
+    inc_en = np.linspace(10, 89, 80)
+    fig = plt.figure(9, figsize=(17, 12))
+    ax = fig.add_subplot(111)
+    p_fit = np.linspace(min(inc_en), max(inc_en), 100)
+    
+    for j in range(2):
+        resolutions = []
+        res_errors = []
+
+        for p in range(len(inc_en)):
+            if j ==0:
+                label, color, linestyle = 'Geant4', 'k', '-'
+                energies = en_real[(E0_real > inc_en[p]) & (E0_real < inc_en[p]+1)]
+            else: 
+                label, color, linestyle = 'CaloHadronic', 'orange', '--'
+                energies = en_fake[(E0_fake > inc_en[p]) & (E0_fake < inc_en[p]+1)] 
+            
+            energies = compute_core90(energies)
+            mean_E = np.mean(energies)
+            std_E = np.std(energies)
+            res = std_E / mean_E
+            resolutions.append(res)
+            res_errors.append(error_sigma_over_mean(energies))
+
+        resolutions = np.array(resolutions)
+        res_errors = np.array(res_errors)
+
+        # Fit the resolution curve
+        popt, pcov = curve_fit(resolution_model, inc_en, resolutions, sigma=res_errors, absolute_sigma=True)
+        a_fit, b_fit, c_fit = popt
+        ua, ub, uc = np.sqrt(np.diag(pcov))          # 1 σ errors
+        corr = pcov / np.outer(np.sqrt(np.diag(pcov)), np.sqrt(np.diag(pcov)))
+        
+        # After the fit:
+        residuals = resolutions - resolution_model(inc_en, *popt)
+        chi_squared = np.sum((residuals / res_errors) ** 2)
+        ndf = len(resolutions) - len(popt)
+        
+        ax.errorbar(inc_en, resolutions, yerr=res_errors, fmt='o', label=label, color=color)
+        ax.plot(p_fit, resolution_model(p_fit, *popt), color=color, linestyle=linestyle,
+                label=f'Fit: \n a = {a_fit:.3f} $\pm$ {ua:.3f}\n b = {b_fit:.2f} $\pm$ {ub:.2f}\n c = {c_fit:.1f} $\pm$ {uc:.1f}')
+        ax.plot([0,0], [-10,-10], color=color, linestyle=linestyle,
+                label=f"χ² / ndf  = {chi_squared/ndf:.2f}       ")
+         
+    plt.xlabel('Incident Energy $E_{0}$ (GeV)')
+    plt.ylabel('Energy Resolution ($\sigma_{90}$ / $\mu_{90}$)')
+    plt.title('$\sigma_{90} / \mu_{90} = a + b / \sqrt{E_{0}} + c / E_{0}$')
+    plt.ylim([0,0.35])
+    plt.xlim([5, 95])
+    h, l = ax.get_legend_handles_labels() 
+    # print(l)   
+    ax.legend([h[0],h[2]],[l[0],l[2]], ncols=2, loc=2)
+    ax2 = ax.twinx()
+    ax2.legend([h[1],h[3]],[l[1],l[3]], ncols=2, loc=2, bbox_to_anchor=(0.001, 0.75))
+    ax2.set_axis_off()
+    ax3 = ax.twinx()
+    ax3.legend([h[4],h[5]],[l[4],l[5]], ncols=2, loc=3)
+    ax3.set_axis_off() 
+    
+    plt.grid(True)
+    plt.tight_layout()  
+    plt.savefig(my_dir+'/FitRes_'+str(len(en_real))+ '_showers.pdf', dpi=100, bbox_inches='tight')
+    plt.close()
+
+      
 def plt_wdPlot(wd_dict, kl_dict, my_dir=None):
     data, data_std, metrics = [], [], []
     data_kl, data_std_kl = [], []
