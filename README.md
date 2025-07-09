@@ -13,8 +13,6 @@ Thorsten Buss, Frank Gaede, Gregor Kasieczka, Anatolii Korol, Katja Kruger, Pete
 ![flow chart of model](model-1.png)
 
 **Abstract:**
-
-```
 Simulating showers of particles in highly-granular calorimeters is a key frontier in the
 application of machine learning to particle physics. Achieving high accuracy and speed
 with generative machine learning models can enable them to augment traditional simulations
@@ -28,7 +26,7 @@ The attention mechanism now allows us to generate complex hadronic showers with 
 pronounced substructure across both the electromagnetic and hadronic calorimeters.
 This is the first time that ML methods are used to holistically generate showers across ECal
 and HCal in highly granular imaging calorimeters.
-```
+
 
 ## Table of Contents
 
@@ -52,7 +50,7 @@ conda env create -f environment.yml
 ```
 
 ## Dataset 
-You can download the dataset of CaloHadronic from: 
+You can download the dataset of CaloHadronic from (doi: [10.5281/zenodo.15301636](https://doi.org/10.5281/zenodo.15301636)): 
 ```
 wget -O pions.hdf5.gz https://zenodo.org/records/15301636/files/all_interactions_pions_regular_ECAL+HCAL_10-90GeV_25.slcio.root_with_time.hdf5.gz\?download\=1
 gzip -d pions.hdf5.gz
