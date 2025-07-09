@@ -10,7 +10,9 @@ Thorsten Buss, Frank Gaede, Gregor Kasieczka, Anatolii Korol, Katja Kruger, Pete
 </div>
 
 
-![flow chart of model](model_.png)
+<p align="center">
+  <img src="model_.png" alt="flow chart of model" />
+</p>
 
 **Abstract:**
 Simulating showers of particles in highly-granular calorimeters is a key frontier in the
