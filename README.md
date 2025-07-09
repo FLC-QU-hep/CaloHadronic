@@ -3,14 +3,14 @@
 <div style="text-align: center;">
 Thorsten Buss, Frank Gaede, Gregor Kasieczka, Anatolii Korol, Katja Kruger, Peter McKeown and Martina Mozzanica 
 
-[![arXiv](https://img.shields.io/badge/arXiv-2501.05534-red)](https://arxiv.org/abs/2501.05534)
-[![PyTorch](https://img.shields.io/badge/PyTorch-2.2-orange)](https://pytorch.org)
+[![arXiv](https://img.shields.io/badge/arXiv-2506.21720-red)](https://arxiv.org/abs/2506.21720)
+[![PyTorch](https://img.shields.io/badge/PyTorch-2.4-orange)](https://pytorch.org)
 
 </div>
 
 This repository contains the code for the results presented in the paper [`CaloHadronic: a diffusion model for the generation of hadronic pion showers`](link)
 
-<img src=model-1.png width=900 style="border-radius:10px">
+![flow chart of model](model-1.png)
 
 **Abstract:**
 
@@ -54,7 +54,8 @@ conda env create -f environment.yml
 ## Dataset 
 You can download the dataset of CaloHadronic from: 
 ```
-wget https://doi.org/10.5281/zenodo.15301636
+wget -O pions.hdf5.gz https://zenodo.org/records/15301636/files/all_interactions_pions_regular_ECAL+HCAL_10-90GeV_25.slcio.root_with_time.hdf5.gz\?download\=1
+gzip -d pions.hdf5.gz
 ```
 note: there is one file containing ~20k showers 
 
