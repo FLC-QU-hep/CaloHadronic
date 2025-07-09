@@ -1,4 +1,5 @@
 # CaloHadronic: a diffusion model for the generation of hadronic showers 
+<a name="readme-top"></a>
 
 <div style="text-align: center;">
 Thorsten Buss, Frank Gaede, Gregor Kasieczka, Anatolii Korol, Katja Kruger, Peter McKeown and Martina Mozzanica 
@@ -95,7 +96,7 @@ python pion-clouds/scripts/evaluation/occ-scale_MultipleEnergies.py
 
 Martina Mozzanica - [@linkedin](https://www.linkedin.com/in/martina-mozzanica-20017b202/) - martina.mozzanica@uni-hamburg.de
 
-<a name="readme-top"></a>
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 <!-- LICENSE -->
 ## License
