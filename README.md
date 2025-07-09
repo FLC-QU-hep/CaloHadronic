@@ -95,7 +95,7 @@ python pion-clouds/scripts/evaluation/occ-scale_MultipleEnergies.py
 
 Martina Mozzanica - [@linkedin](https://www.linkedin.com/in/martina-mozzanica-20017b202/) - martina.mozzanica@uni-hamburg.de
 
-<p align="right">(<a href="#readme-top">back to top</a>)</p>
+<a name="readme-top"></a>
 
 <!-- LICENSE -->
 ## License
