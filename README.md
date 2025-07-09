@@ -1,7 +1,7 @@
 <a name="readme-top"></a>
 # CaloHadronic: a diffusion model for the generation of hadronic showers 
 
-<div style="text-align: center;">
+<div align="center">
 Thorsten Buss, Frank Gaede, Gregor Kasieczka, Anatolii Korol, Katja Kruger, Peter McKeown and Martina Mozzanica 
 
 [![arXiv](https://img.shields.io/badge/arXiv-2506.21720-red)](https://arxiv.org/abs/2506.21720)
