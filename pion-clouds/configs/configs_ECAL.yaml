@@ -5,7 +5,7 @@
 name: 'HGx9_Ecal_Smear_l3_d256_L32_CosAnn_AdamMini_Monotonic2_'  
 comet_project: "CaloHadronic-ECAL"   # please modify it in the bash script
 Acomment: 'PionClouds'
-log_comet: true
+log_comet: false
 multi_gpu: false
 logdir: '/data/dust/user/dayhallh/calohadronic-data/logdir_ECAL'
 only_hcal: false
@@ -39,7 +39,7 @@ transformer: # Transformer settings
 data:
   farthest_point_sampling: false
   optimal_transport: false
-  ecal_compressed = false
+  ecal_compressed: false
   data: 'new_hgx4'  
   dataset_path : '/data/dust/user/dayhallh/calohadronic-data/dataset/pions.hdf5'
   features: 4 # number of features in a point (x,y,z,energy,time) => 5
@@ -86,7 +86,7 @@ scheduler:
   sched_end_epoch: 3000000
   
 # Others
-device: 'cpu'
+device: 'cuda'
 seed: 455
 val_freq: 10000
 test_freq: 30000
@@ -121,5 +121,5 @@ s_churn: 0.0
 s_noise: 1.0
 
 # NOTE: None in python is null in yaml !
-model_path: 'HGx9_Ecal_Smear_l3_d256_L32_CosAnn_AdamMini_Monotonic2_2025_04_08__20_07_01/ckpt_latest.pt'
-# model_path: null 
+# model_path: 'HGx9_Ecal_Smear_l3_d256_L32_CosAnn_AdamMini_Monotonic2_2025_04_08__20_07_01/ckpt_latest.pt'
+model_path: null 

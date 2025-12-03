@@ -4,7 +4,7 @@
 name: 'HGx9_Hcal_ecalCompression_'  
 comet_project: "CaloHadronic-HCAL"  # please modify it in the bash script
 Acomment: 'PionClouds'
-log_comet: true
+log_comet: false
 multi_gpu: true
 logdir: '/data/dust/user/dayhallh/calohadronic-data/logdir_HCAL'
 only_hcal: true
@@ -85,7 +85,7 @@ scheduler:
   sched_end_epoch: 3000000
 
 # Others
-device: 'cpu'
+device: 'cuda'
 seed: 45
 val_freq: 10000
 test_freq: 30000
@@ -120,5 +120,5 @@ s_noise: 1.0
 
 # NOTE: None in python is null in yaml !
 
-model_path: 'HGx9_Hcal_ecalCompression_2025_04_11__11_30_52/ckpt_latest.pt'
-# model_path: null 
+# model_path: 'HGx9_Hcal_ecalCompression_2025_04_11__11_30_52/ckpt_latest.pt'
+model_path: null 

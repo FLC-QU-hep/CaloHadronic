@@ -1,4 +1,7 @@
 from comet_ml import Experiment
+import sys
+import time
+import numpy as np
 import torch
 from torch.nn import Module
 from torch.utils.data import DataLoader
@@ -7,13 +10,12 @@ import torch.multiprocessing as mp
 from torch.utils.data.distributed import DistributedSampler
 import torch.distributed as dist
 from torch.nn.parallel import DistributedDataParallel as DDP
-from torch.distributed import init_process_group, destroy_process_group
+from torch.distributed import destroy_process_group
 import os
-import math
 import matplotlib.pyplot as plt
 from utils.dataset import PionClouds
 from models.common import get_linear_scheduler
-from utils.misc import *
+from utils.misc import Config, seed_all, load_model_state, get_new_log_dir, CheckpointManager, ddp_setup
 from models.CaloClouds_2 import CaloClouds2_Attention
 import k_diffusion as K
 from scipy.optimize import linear_sum_assignment

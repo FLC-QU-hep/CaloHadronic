@@ -23,6 +23,10 @@ class Config:
 
     @staticmethod
     def from_yaml(file_path):
+        if not os.path.exists(file_path):
+            this_dir = os.path.dirname(os.path.abspath(__file__))
+            dir_above = os.path.abspath(os.path.join(this_dir, "../.."))
+            file_path = os.path.join(dir_above, file_path)
         # Load the YAML file
         cfg_dict = OmegaConf.load(file_path)
         # Convert OmegaConf object to a regular dictionary
