@@ -29,7 +29,10 @@ my_dir = '../pion-clouds-log-dir/'
 edm_dir_ecal = my_dir+'HGx9_Ecal_Smear_l3_d256_L32_CosAnn_AdamMini_Monotonic2_2025_04_08__20_07_01/'
 edm_dir = my_dir+'HGx9_Hcal_ecalCompression_2025_04_11__11_30_52/'
 
-cfg_flow = OmegaConf.load('configs/configs_sf.yaml')
+this_dir = os.path.dirname(os.path.abspath(__file__))
+conf_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '../configs'))
+configs_sf_path = os.path.join(conf_dir, 'configs_sf.yaml')
+cfg_flow = OmegaConf.load(configs_sf_path)
 cfg_hcal = Config.from_yaml(edm_dir+'configs_HCAL.yaml') 
 cfg_ecal = Config.from_yaml(edm_dir_ecal+'configs_ECAL.yaml') 
 configs = cfg_hcal

@@ -19,7 +19,10 @@ from scipy.stats import wasserstein_distance
 from adam_mini import Adam_mini
 
 # Load the config.yaml file
-cfg = OmegaConf.load('configs/configs_sf.yaml')
+this_dir = os.path.dirname(os.path.abspath(__file__))
+conf_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '../configs'))
+configs_sf_path = os.path.join(conf_dir, 'configs_sf.yaml')
+cfg = OmegaConf.load(configs_sf_path)
 seed_all(seed = cfg.seed)
 print(cfg)
 
@@ -28,7 +31,7 @@ if not os.path.exists(outdir):
     os.makedirs(outdir)
 
 # Copy the config.yaml file to the output directory
-shutil.copy('configs/configs_sf.yaml', os.path.join(outdir, 'configs_sf.yaml'))
+shutil.copy(configs_sf_path, os.path.join(outdir, 'configs_sf.yaml'))
 
 # Set up logger
 logger = logging.getLogger(__name__)

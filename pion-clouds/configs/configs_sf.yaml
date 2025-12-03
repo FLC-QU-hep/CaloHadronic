@@ -3,9 +3,9 @@ comet_project: "CaloHadronic"  # please modify it in the bash script
 log_comet: false
 seed: 36
 device: 'cuda:0'
-ckps_dir: '/data/dust/user/mmozzani/pion-clouds/shower_flow_ckps/'
-load_dir: '/data/dust/user/mmozzani/pion-clouds/files/npy_array/'
-dataset_path : '/data/dust/user/mmozzani/pion-clouds/dataset/hdf5_HGx9/all_interactions_pions_regular_ECAL+HCAL_10-90GeV_{}.slcio.root_with_time.hdf5'
+ckps_dir: '/data/dust/user/dayhallh/calohadronic-data/shower_flow_ckps/'
+load_dir: '/data/dust/user/dayhallh/calohadronic-data/files/npy_array/'
+dataset_path : '/data/dust/user/dayhallh/calohadronic-data/dataset/pions.hdf5'
 
 # choose in which way you wanna give the model the difference between even and odd layers
 hot_encoding: 0 # choices: [0 (off), 1 (on)]    
