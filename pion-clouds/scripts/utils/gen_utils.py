@@ -1,4 +1,5 @@
 import numpy as np
+import os
 import torch
 from tqdm import tqdm
 import sys
@@ -266,6 +267,8 @@ def plot_not_proj(real_showers, fake_showers, cond_E_real, cond_E_fake, only_hca
     plt.legend()
     plt.grid()
      
+    if not os.path.exists('gen_utils_plot'):
+        os.makedirs('gen_utils_plot')
     plt.savefig('gen_utils_plot/after_sample_new_'+name+'.png')
     plt.close()
 
