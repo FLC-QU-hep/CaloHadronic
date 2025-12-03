@@ -86,7 +86,7 @@ scheduler:
   sched_end_epoch: 3000000
   
 # Others
-device: 'cuda'
+device: 'cpu'
 seed: 455
 val_freq: 10000
 test_freq: 30000
