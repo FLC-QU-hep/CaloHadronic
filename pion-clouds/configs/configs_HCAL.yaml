@@ -5,7 +5,7 @@ name: 'HGx9_Hcal_ecalCompression_'
 comet_project: "CaloHadronic-HCAL"  # please modify it in the bash script
 Acomment: 'PionClouds'
 log_comet: false
-multi_gpu: true
+multi_gpu: false
 logdir: '/data/dust/user/dayhallh/calohadronic-data/logdir_HCAL'
 only_hcal: true
 only_ecal: false
