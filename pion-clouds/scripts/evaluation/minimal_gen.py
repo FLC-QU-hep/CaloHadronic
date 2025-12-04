@@ -162,7 +162,6 @@ def ecal_gen_showers_batch(
     samples = samples[idx_hits_sorted]
 
     for evt_id in range(0, num, bs):
-        print(evt_id)
         if (num - evt_id) < bs:
             bs = num - evt_id
 
@@ -267,7 +266,6 @@ def hcal_gen_showers_batch(
     )
 
     for evt_id in range(0, num, bs):
-        print(evt_id)
         if (num - evt_id) < bs:
             bs = num - evt_id
 
@@ -459,12 +457,13 @@ cfg_flow, cfg_hcal, cfg_ecal = get_configs()
 # use single thread
 # torch.set_num_threads(1) # also comment out os.environ['OPENBLAS_NUM_THREADS'] = '1' above for multi threaded
 
-def example():
+if __name__ == "__main__":
     # min and max energy of the generated events
     energy_range = [10, 90]  # [84, 86] #[49, 51] #[19, 21]  #[14,16]
+    energy = 10
     # num = 50002 # total number of generated events
-    num = 128  # total number of generated events
-    bs = 64  # batch size   # optimized: bs=64(cm), 64(edm), 64(ddpm) for GPU, bs=1 for CPU (single-threaded)
+    num = 16  # total number of generated events
+    bs = 16  # batch size   # optimized: bs=64(cm), 64(edm), 64(ddpm) for GPU, bs=1 for CPU (single-threaded)
 
 
     print("num", num, "bs", bs)
@@ -477,7 +476,8 @@ def example():
     )
 
     print("starting gen_utils...")
-    cond_E = torch.FloatTensor(num, 1).uniform_(energy_range[0], energy_range[1])
+    #cond_E = torch.FloatTensor(num, 1).uniform_(energy_range[0], energy_range[1])
+    cond_E = torch.FloatTensor(num, 1).fill_(energy)
 
     if cfg_hcal.data.norm_cond and cfg_ecal.data.norm_cond:
         cond_E = cond_E / 100 * 2 - 1
@@ -497,3 +497,4 @@ def example():
         bs,
     )
     print("done")
+
