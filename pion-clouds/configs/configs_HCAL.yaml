@@ -4,9 +4,9 @@
 name: 'HGx9_Hcal_ecalCompression_'  
 comet_project: "CaloHadronic-HCAL"  # please modify it in the bash script
 Acomment: 'PionClouds'
-log_comet: true
-multi_gpu: true
-logdir: '/data/dust/user/mmozzani/pion-clouds/pion-clouds-log-dir/'
+log_comet: false
+multi_gpu: false
+logdir: '/data/dust/user/dayhallh/calohadronic-data/logdir_HCAL'
 only_hcal: true
 only_ecal: false
 
@@ -40,7 +40,7 @@ data:
   optimal_transport: false
   ecal_compressed: true
   data: 'new_hgx4'  
-  dataset_path: '/data/dust/user/mmozzani/pion-clouds/dataset/hdf5_HGx9/all_interactions_pions_regular_ECAL+HCAL_10-90GeV_{}.slcio.root_with_time.hdf5'
+  dataset_path : '/data/dust/user/dayhallh/calohadronic-data/dataset/pions.hdf5'
   features: 4  # number of features in a point (x,y,z,energy,time) => 5
   cond_features: 49  # (energy =1 + points_per_layer = 48 ) ## (n_points = 1) 50
   ecal_features: 4  
@@ -120,5 +120,5 @@ s_noise: 1.0
 
 # NOTE: None in python is null in yaml !
 
-model_path: 'HGx9_Hcal_ecalCompression_2025_04_11__11_30_52/ckpt_latest.pt'
-# model_path: null 
+# model_path: 'HGx9_Hcal_ecalCompression_2025_04_11__11_30_52/ckpt_latest.pt'
+model_path: null 

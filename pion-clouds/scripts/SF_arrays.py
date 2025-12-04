@@ -13,7 +13,10 @@ import os
 from utils.misc import Config, Configs
 from omegaconf import OmegaConf
 
-cfg = OmegaConf.load('configs/configs_sf.yaml')
+this_dir = os.path.dirname(os.path.abspath(__file__))
+conf_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '../configs'))
+configs_sf_path = os.path.join(conf_dir, 'configs_sf.yaml')
+cfg = OmegaConf.load(configs_sf_path)
 dataset_path = cfg.dataset_path
 print(dataset_path)
 
