@@ -5,9 +5,9 @@ import sys
 import os
 # Add the parent directory of 'utils' to the Python path
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-from utils.plotting import *
-from utils.plotting import cfg as cfg_plt
-import utils.plotting as plotting
+# from utils.plotting import *
+# from utils.plotting import cfg as cfg_plt
+# import utils.plotting as plotting
 import matplotlib.gridspec as gridspec
 from matplotlib import pyplot, image, transforms
 import numpy as np
@@ -97,7 +97,7 @@ def plotting_energy_sum(my_dir):
         h_data = axs[0].hist(np.array(real_dict_85[to_plot_r]), bins = 40, range=_range, alpha = 0.2, linewidth=1.6, color=col[2])
         h_gen = axs[0].hist(np.array(fake_dict_85[to_plot]), bins = 40, range=_range, histtype='step', linewidth=4, linestyle ='-', color=col[2], label='85GeV')
         
-        pgeant = axs[0].hist([0,0], bins=1, label='geant4', color='gray', alpha=0.2)
+        pgeant = axs[0].hist([0,0], bins=1, label='Geant4', color='gray', alpha=0.2)
         pgen = axs[0].hist([0,0], bins=1, label='CaloHadronic', histtype='step', color='gray') 
         axs[0].set_xlim(_range[0], _range[1])         
         axs[0].set_xlabel('Energy Sum '+title_list[j], fontsize=font)
@@ -137,7 +137,7 @@ def plotting_hits(my_dir):
         h_data = axs[0].hist(np.array(real_dict_85[to_plot_r]), bins = 40, range=_range, alpha = 0.2, linewidth=1.6, color=col[2])
         h_gen = axs[0].hist(np.array(fake_dict_85[to_plot]), bins = 40, range=_range, histtype='step', linewidth=4,linestyle ='-', color=col[2], label='85GeV')
         
-        axs[0].hist([0,0], bins=1, label='geant4', color='gray', alpha=0.2)
+        axs[0].hist([0,0], bins=1, label='Geant4', color='gray', alpha=0.2)
         axs[0].hist([0,0], bins=1, label='CaloHadronic', histtype='step', color='gray')  
         axs[0].set_xlim(_range[0], _range[1])         
         axs[0].set_xlabel('# Hits '+title_list[j], fontsize=font)
@@ -396,7 +396,7 @@ def plotting_correlations(my_dir):
     axs3.set_xlabel("Visible energy HCal [MeV]", fontsize=font) 
     axs3.set_ylabel("Counts", fontsize=font) 
     
-    axs3.hist([0,0], bins=1, label='geant4', color='gray', alpha=0.2)
+    axs3.hist([0,0], bins=1, label='Geant4', color='gray', alpha=0.2)
     axs3.hist([0,0], bins=1, label='CaloHadronic', histtype='step', color='gray')  
     h, l = axs3.get_legend_handles_labels()    
     axs3.legend([h[0],h[1],h[2]],[l[0],l[1],l[2]], loc=1)

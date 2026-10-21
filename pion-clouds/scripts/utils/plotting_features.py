@@ -6,7 +6,7 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 import matplotlib.font_manager as font_manager
 from scipy.stats import binned_statistic, pearsonr
-import utils.metrics as metrics
+# import utils.metrics as metrics
 from matplotlib.patches import Circle, RegularPolygon
 from matplotlib.path import Path
 from pathlib import Path

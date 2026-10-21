@@ -1,14 +1,14 @@
 #!/bin/bash
-#SBATCH --time 7-00:00:00
+#SBATCH --time 1-00:00:00
 #SBATCH --nodes 1
 #SBATCH --ntasks=1
 #SBATCH --partition maxgpu
 #SBATCH --job-name CCtraining
 
-#SBATCH --constraint="GPUx1&A100"
+##SBATCH --constraint="GPUx1&A100"
 ##SBATCH --constraint="GPUx1&A100-PCIE-80GB"
 ##SBATCH --constraint=(A100|V100)&GPUx1
-
+#SBATCH --mem-per-cpu=500GB
 ## for multi-gpu
 ##SBATCH --constraint=A100&GPUx4
 ##SBATCH --constraint=GPUx4
@@ -24,7 +24,7 @@
 module load maxwell mamba
 mamba init
 mamba activate NewEnv
-cd /data/dust/user/mmozzani/pion-clouds/
+cd /data/dust/user/mmozzani/CaloHadronic/pion-clouds/
 
 echo ${SLURM_STEP_GPUS:-$SLURM_JOB_GPUS}
 export type="hcal" # options: ["hcal", "ecal"]'
@@ -34,7 +34,8 @@ PARAMS=(
 )
 echo $type
  
-python scripts/training.py --type $type 
+# python scripts/training.py --type $type 
 # python scripts/training_CD.py --type $type 
-
+# python scripts/evaluation/eval_checkpoints.py 
+python scripts/evaluation/occ-scale.py
 exit
